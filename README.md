@@ -11,8 +11,11 @@ A sleek, self-hosted web application to track your 3D printing filament inventor
 ## ✨ Features
 
 - **Inventory Dashboard**: Overview of total spools, weight, and inventory value.
-- **Smart Tracking**: Add filaments with material types, custom colors, and price tracking.
-- **Print History**: Log your prints to automatically deduct used weight and calculate costs.
+- **Multicolor Support**: Log multiple filaments for a single print with real-time cost calculation.
+- **Smart Tracking**: Add filaments with material types, custom colors, and precise price tracking (€).
+- **Precision Logging**: Weights support 2 decimal places for accurate inventory management.
+- **Weight Restoration**: Delete print history logs to automatically restore subtracted weight to spools.
+- **Custom Alerts**: Configure individual alert email addresses for low filament notifications.
 - **Quick Brands**: Save your favorite brands for fast inventory entry.
 - **Authentication**: Secure multi-user support with JWT authentication.
 - **Dark Mode UI**: A premium, "Space Mono" inspired aesthetic for your workshop.

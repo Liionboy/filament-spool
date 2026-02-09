@@ -56,8 +56,8 @@ app.post('/api/auth/register', async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
 
         db.run(
-            'INSERT INTO users (username, email, password) VALUES (?, ?, ?)',
-            [username, email, hashedPassword],
+            'INSERT INTO users (username, email, password, alert_email) VALUES (?, ?, ?, ?)',
+            [username, email, hashedPassword, email],
             function (err) {
                 if (err) {
                     if (err.message.includes('UNIQUE constraint failed')) {
@@ -115,10 +115,34 @@ app.post('/api/auth/login', (req, res) => {
 
             res.json({
                 token,
-                user: { id: user.id, username: user.username, email: user.email }
+                user: { id: user.id, username: user.username, email: user.email, alertEmail: user.alert_email }
             });
         }
     );
+});
+
+// User Settings Routes
+app.get('/api/user/settings', authenticateToken, (req, res) => {
+    db.get('SELECT alert_email FROM users WHERE id = ?', [req.user.userId], (err, row) => {
+        if (err) {
+            return res.status(500).json({ error: 'Failed to fetch settings' });
+        }
+        res.json({ alertEmail: row.alert_email });
+    });
+});
+
+app.put('/api/user/settings', authenticateToken, (req, res) => {
+    const { alertEmail } = req.body;
+    if (!alertEmail) {
+        return res.status(400).json({ error: 'Alert email is required' });
+    }
+
+    db.run('UPDATE users SET alert_email = ? WHERE id = ?', [alertEmail, req.user.userId], function (err) {
+        if (err) {
+            return res.status(500).json({ error: 'Failed to update settings' });
+        }
+        res.json({ success: true, message: 'Settings updated' });
+    });
 });
 
 // Filament Routes
@@ -182,12 +206,12 @@ app.put('/api/filaments/:id', authenticateToken, (req, res) => {
                 return res.status(404).json({ error: 'Filament not found' });
             }
 
-            db.get('SELECT * FROM filaments WHERE id = ?', [filamentId], (err, row) => {
+            db.get('SELECT f.*, u.alert_email FROM filaments f JOIN users u ON f.user_id = u.id WHERE f.id = ?', [filamentId], (err, row) => {
                 if (!err && row) {
                     // Check for low filament alert on manual update too
                     const threshold = parseInt(process.env.LOW_FILAMENT_THRESHOLD) || 200;
                     if (row.remaining_weight <= threshold) {
-                        sendLowFilamentAlert(row, row.remaining_weight);
+                        sendLowFilamentAlert(row, row.remaining_weight, row.alert_email);
                     }
                 }
                 res.json(row);
@@ -350,7 +374,13 @@ app.post('/api/prints', authenticateToken, async (req, res) => {
                     // Check for low filament
                     const threshold = parseInt(process.env.LOW_FILAMENT_THRESHOLD) || 200;
                     if (newWeight <= threshold) {
-                        sendLowFilamentAlert(filament, newWeight);
+                        db.get('SELECT alert_email FROM users WHERE id = ?', [req.user.userId], (err, user) => {
+                            if (!err && user) {
+                                sendLowFilamentAlert(filament, newWeight, user.alert_email);
+                            } else {
+                                sendLowFilamentAlert(filament, newWeight);
+                            }
+                        });
                     }
                 }
             };

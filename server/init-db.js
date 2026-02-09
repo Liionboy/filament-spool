@@ -24,11 +24,28 @@ const initDatabase = async () => {
                 username TEXT UNIQUE NOT NULL,
                 email TEXT UNIQUE NOT NULL,
                 password TEXT NOT NULL,
+                alert_email TEXT,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         `, (err) => {
             if (err) reject(err);
             else resolve();
+        });
+    });
+
+    // Migration: Add alert_email to users table if it doesn't exist
+    await new Promise((resolve) => {
+        db.run('ALTER TABLE users ADD COLUMN alert_email TEXT', (err) => {
+            if (err) {
+                if (err.message.includes('duplicate column name')) {
+                    console.log('alert_email column already exists.');
+                } else {
+                    console.error('Migration error (alert_email):', err.message);
+                }
+            } else {
+                console.log('Added alert_email column to users table.');
+            }
+            resolve();
         });
     });
 

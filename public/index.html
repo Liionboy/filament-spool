@@ -910,6 +910,48 @@
             color: var(--accent);
         }
 
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1002;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: var(--bg-panel);
+            border: 2px solid var(--border);
+            border-radius: 4px;
+            width: 90%;
+            max-width: 400px;
+            padding: 1.5rem;
+            transform: scale(0.95);
+            transition: transform 0.3s;
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
         /* Print Modal */
         .print-modal-overlay {
             position: fixed;
@@ -1097,9 +1139,26 @@
         }
 
         .user-menu {
+            gap: 1rem;
+            margin-right: 1rem;
+        }
+
+        .settings-btn {
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 0.4rem 0.8rem;
+            border-radius: 4px;
+            cursor: pointer;
             display: flex;
             align-items: center;
-            gap: 1rem;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .settings-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
         }
 
         .logout-btn {
@@ -1164,6 +1223,33 @@
         </div>
     </div>
 
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal-overlay">
+        <div class="modal">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h3 style="margin: 0;">User Settings</h3>
+                <button class="close-history" onclick="closeSettingsModal()" style="border: none; background: none;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <form id="settingsForm">
+                <div class="form-group">
+                    <label>Alert Email Address</label>
+                    <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Low filament
+                        alerts will be sent here.</p>
+                    <input type="email" id="alertEmailInput" placeholder="email@example.com" required>
+                </div>
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button type="submit" class="btn">Save Settings</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeSettingsModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div id="app">
         <header class="header">
             <div class="header-content">
@@ -1198,6 +1284,15 @@
                     </div>
                 </div>
                 <div class="header-actions">
+                    <button class="history-btn" onclick="openSettingsModal()" title="Settings">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path
+                                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+                            </path>
+                        </svg>
+                    </button>
                     <button class="history-btn" onclick="openPrintModal()">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2">
@@ -1817,6 +1912,46 @@
                 showToast(err.message, 'error');
             }
         }
+
+        const settingsModal = document.getElementById('settingsModal');
+        const settingsForm = document.getElementById('settingsForm');
+        const alertEmailInput = document.getElementById('alertEmailInput');
+
+        async function openSettingsModal() {
+            try {
+                const data = await apiFetch('/user/settings');
+                alertEmailInput.value = data.alertEmail || '';
+                settingsModal.classList.add('active');
+            } catch (err) {
+                showToast('Failed to load settings', 'error');
+            }
+        }
+
+        function closeSettingsModal() {
+            settingsModal.classList.remove('active');
+        }
+
+        settingsForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const alertEmail = alertEmailInput.value;
+
+            try {
+                await apiFetch('/user/settings', {
+                    method: 'PUT',
+                    body: JSON.stringify({ alertEmail })
+                });
+                showToast('Settings saved successfully', 'success');
+                closeSettingsModal();
+
+                // Update local storage user data
+                if (user) {
+                    user.alertEmail = alertEmail;
+                    localStorage.setItem('filament_user', JSON.stringify(user));
+                }
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        });
 
         function addFilamentRow() {
             const row = document.createElement('div');

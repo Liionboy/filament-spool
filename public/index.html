@@ -1723,7 +1723,15 @@
 
                 return `
                     <div class="history-item">
-                        <div class="history-date">${dateStr}</div>
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div class="history-date">${dateStr}</div>
+                            <button class="btn-icon" onclick="deletePrint(${print.id})" title="Delete print log" style="width: 24px; height: 24px; padding: 0; border-color: transparent; background: transparent;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="3 6 5 6 21 6"/>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                </svg>
+                            </button>
+                        </div>
                         <div class="history-print">${print.name}</div>
                         ${filamentsHtml}
                         ${print.cost ? `<div class="history-cost">€${print.cost.toFixed(2)}</div>` : ''}
@@ -1776,6 +1784,35 @@
                         showToast(`${localFil.material} (${localFil.color_name}) is running low!`, 'warning');
                     }
                 });
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function deletePrint(id) {
+            if (!confirm('Are you sure you want to delete this print log? The used weight will be restored to your spools.')) {
+                return;
+            }
+
+            try {
+                await apiFetch(`/prints/${id}`, { method: 'DELETE' });
+
+                // Find filaments to restore weights locally
+                const print = printHistory.find(p => p.id === id);
+                if (print && print.filaments) {
+                    print.filaments.forEach(pf => {
+                        const localFil = filaments.find(f => f.id == pf.filament_id);
+                        if (localFil) {
+                            localFil.remaining_weight = Number(localFil.remaining_weight) + Number(pf.weight_used);
+                        }
+                    });
+                }
+
+                printHistory = printHistory.filter(p => p.id !== id);
+                render();
+                renderHistory();
+                loadStats();
+                showToast('Print log deleted and weight restored', 'success');
             } catch (err) {
                 showToast(err.message, 'error');
             }

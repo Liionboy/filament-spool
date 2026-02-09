@@ -395,6 +395,66 @@ app.post('/api/prints', authenticateToken, async (req, res) => {
     }
 });
 
+app.delete('/api/prints/:id', authenticateToken, (req, res) => {
+    const printId = req.params.id;
+
+    db.serialize(() => {
+        db.run('BEGIN TRANSACTION');
+
+        // 1. Get filaments used in this print
+        db.all('SELECT filament_id, weight_used FROM print_filaments WHERE print_id = ?', [printId], (err, usedFilaments) => {
+            if (err) {
+                db.run('ROLLBACK');
+                return res.status(500).json({ error: 'Failed to find print details' });
+            }
+
+            try {
+                // 2. Restore weights to each filament
+                const updatePromises = usedFilaments.map(item => {
+                    return new Promise((resolve, reject) => {
+                        db.run(
+                            'UPDATE filaments SET remaining_weight = remaining_weight + ? WHERE id = ? AND user_id = ?',
+                            [item.weight_used, item.filament_id, req.user.userId],
+                            function (err) {
+                                if (err) reject(err);
+                                else resolve();
+                            }
+                        );
+                    });
+                });
+
+                Promise.all(updatePromises)
+                    .then(() => {
+                        // 3. Delete from print_filaments and print_history
+                        db.run('DELETE FROM print_filaments WHERE print_id = ?', [printId], (err) => {
+                            if (err) {
+                                db.run('ROLLBACK');
+                                return res.status(500).json({ error: 'Failed to delete print filaments' });
+                            }
+
+                            db.run('DELETE FROM print_history WHERE id = ? AND user_id = ?', [printId, req.user.userId], (err) => {
+                                if (err) {
+                                    db.run('ROLLBACK');
+                                    return res.status(500).json({ error: 'Failed to delete print record' });
+                                }
+
+                                db.run('COMMIT');
+                                res.json({ success: true, message: 'Print deleted and weight restored' });
+                            });
+                        });
+                    })
+                    .catch(err => {
+                        db.run('ROLLBACK');
+                        res.status(500).json({ error: 'Failed to restore weights' });
+                    });
+            } catch (err) {
+                db.run('ROLLBACK');
+                res.status(500).json({ error: 'Internal server error' });
+            }
+        });
+    });
+});
+
 // Stats Route
 app.get('/api/stats', authenticateToken, (req, res) => {
     db.get(

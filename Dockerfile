@@ -17,7 +17,11 @@ EXPOSE 3000
 
 # Set environment variables
 ENV NODE_ENV=production
-ENV DB_PATH=/app/db/filaments.sqlite
+ENV DB_PATH=/app/db/inventory.db
 
-# Start application
-CMD ["node", "server/index.js"]
+# Copy entrypoint script
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
+# Start application via entrypoint
+ENTRYPOINT ["/app/entrypoint.sh"]

@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const path = require('path');
 require('dotenv').config();
+const { sendLowFilamentAlert } = require('./email-service');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -57,7 +58,7 @@ app.post('/api/auth/register', async (req, res) => {
         db.run(
             'INSERT INTO users (username, email, password) VALUES (?, ?, ?)',
             [username, email, hashedPassword],
-            function(err) {
+            function (err) {
                 if (err) {
                     if (err.message.includes('UNIQUE constraint failed')) {
                         return res.status(400).json({ error: 'Username or email already exists' });
@@ -145,7 +146,7 @@ app.post('/api/filaments', authenticateToken, (req, res) => {
         `INSERT INTO filaments (user_id, material, color_name, color, brand, total_weight, remaining_weight, price)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [req.user.userId, material, color_name, color, brand, total_weight, remaining_weight || total_weight, price || 0],
-        function(err) {
+        function (err) {
             if (err) {
                 return res.status(500).json({ error: 'Failed to add filament' });
             }
@@ -173,7 +174,7 @@ app.put('/api/filaments/:id', authenticateToken, (req, res) => {
     db.run(
         'UPDATE filaments SET remaining_weight = ? WHERE id = ? AND user_id = ?',
         [remaining_weight, filamentId, req.user.userId],
-        function(err) {
+        function (err) {
             if (err) {
                 return res.status(500).json({ error: 'Failed to update filament' });
             }
@@ -194,7 +195,7 @@ app.delete('/api/filaments/:id', authenticateToken, (req, res) => {
     db.run(
         'DELETE FROM filaments WHERE id = ? AND user_id = ?',
         [filamentId, req.user.userId],
-        function(err) {
+        function (err) {
             if (err) {
                 return res.status(500).json({ error: 'Failed to delete filament' });
             }
@@ -230,7 +231,7 @@ app.post('/api/brands', authenticateToken, (req, res) => {
     db.run(
         'INSERT OR IGNORE INTO quick_brands (user_id, brand) VALUES (?, ?)',
         [req.user.userId, brand],
-        function(err) {
+        function (err) {
             if (err) {
                 return res.status(500).json({ error: 'Failed to add brand' });
             }
@@ -245,7 +246,7 @@ app.delete('/api/brands/:brand', authenticateToken, (req, res) => {
     db.run(
         'DELETE FROM quick_brands WHERE user_id = ? AND brand = ?',
         [req.user.userId, brand],
-        function(err) {
+        function (err) {
             if (err) {
                 return res.status(500).json({ error: 'Failed to remove brand' });
             }
@@ -310,8 +311,8 @@ app.post('/api/prints', authenticateToken, (req, res) => {
                 `INSERT INTO print_history (user_id, name, filament_id, material, brand, color_name, color, weight_used, cost)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [req.user.userId, name, filament_id, filament.material, filament.brand,
-                 filament.color_name, filament.color, weight_used, printCost],
-                function(err) {
+                filament.color_name, filament.color, weight_used, printCost],
+                function (err) {
                     if (err) {
                         return res.status(500).json({ error: 'Failed to log print' });
                     }
@@ -320,6 +321,17 @@ app.post('/api/prints', authenticateToken, (req, res) => {
                         if (err) {
                             return res.status(500).json({ error: 'Failed to fetch created print' });
                         }
+
+                        // Check for low filament
+                        const threshold = parseInt(process.env.LOW_FILAMENT_THRESHOLD) || 200;
+                        if (newWeight <= threshold) {
+                            db.get('SELECT * FROM filaments WHERE id = ?', [filament_id], (err, filament) => {
+                                if (!err && filament) {
+                                    sendLowFilamentAlert(filament, newWeight);
+                                }
+                            });
+                        }
+
                         res.status(201).json({ ...row, current_remaining: newWeight });
                     });
                 }

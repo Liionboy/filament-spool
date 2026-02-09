@@ -6,6 +6,9 @@
 
 A sleek, self-hosted web application to track your 3D printing filament inventory, monitor usage, and calculate printing costs.
 
+<img width="1674" height="1031" alt="image" src="https://github.com/user-attachments/assets/449d32b8-4047-4fab-bc21-ebd7047330a6" />
+
+
 ---
 
 ## ✨ Features

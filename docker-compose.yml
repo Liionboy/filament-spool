@@ -2,7 +2,9 @@ services:
   app:
     build: .
     ports:
-      - "3000:3000"
+      - "3033:3000"
+    env_file:
+      - .env
     volumes:
       - ./db:/app/db
     restart: always

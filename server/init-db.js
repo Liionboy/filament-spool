@@ -42,8 +42,8 @@ const initDatabase = async () => {
                 color_name TEXT NOT NULL,
                 color TEXT NOT NULL,
                 brand TEXT NOT NULL,
-                total_weight INTEGER NOT NULL,
-                remaining_weight INTEGER NOT NULL,
+                total_weight REAL NOT NULL,
+                remaining_weight REAL NOT NULL,
                 price REAL DEFAULT 0,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -82,7 +82,7 @@ const initDatabase = async () => {
                 brand TEXT NOT NULL,
                 color_name TEXT NOT NULL,
                 color TEXT NOT NULL,
-                weight_used INTEGER NOT NULL,
+                weight_used REAL NOT NULL,
                 cost REAL DEFAULT 0,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -105,7 +105,7 @@ const initDatabase = async () => {
                 brand TEXT NOT NULL,
                 color_name TEXT NOT NULL,
                 color TEXT NOT NULL,
-                weight_used INTEGER NOT NULL,
+                weight_used REAL NOT NULL,
                 cost REAL DEFAULT 0,
                 FOREIGN KEY (print_id) REFERENCES print_history(id) ON DELETE CASCADE,
                 FOREIGN KEY (filament_id) REFERENCES filaments(id) ON DELETE SET NULL

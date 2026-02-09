@@ -1277,11 +1277,13 @@
                             <div class="form-row">
                                 <div class="form-group">
                                     <label>Total Weight (g)</label>
-                                    <input type="number" id="totalWeight" placeholder="1000" min="1" required>
+                                    <input type="number" id="totalWeight" placeholder="1000" min="1" step="any"
+                                        required>
                                 </div>
                                 <div class="form-group">
                                     <label>Remaining (g)</label>
-                                    <input type="number" id="remainingWeight" placeholder="1000" min="0" required>
+                                    <input type="number" id="remainingWeight" placeholder="1000" min="0" step="any"
+                                        required>
                                 </div>
                             </div>
 
@@ -1324,7 +1326,7 @@
                 <h3>Update Weight</h3>
                 <div class="form-group">
                     <label>Remaining Weight (g)</label>
-                    <input type="number" id="editWeight" min="0">
+                    <input type="number" id="editWeight" min="0" step="any">
                 </div>
                 <div class="modal-actions">
                     <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
@@ -1372,8 +1374,8 @@
                             <select class="print-filament-select" style="flex: 2;" onchange="updatePrintCost()">
                                 <option value="">Select spool...</option>
                             </select>
-                            <input type="number" class="print-weight-input" placeholder="Grams" min="1" style="flex: 1;"
-                                oninput="updatePrintCost()" required>
+                            <input type="number" class="print-weight-input" placeholder="Grams" min="0" step="any"
+                                style="flex: 1;" oninput="updatePrintCost()" required>
                         </div>
                     </div>
                 </div>
@@ -1573,8 +1575,8 @@
                     color_name: document.getElementById('colorName').value,
                     color: document.getElementById('color').value,
                     brand: document.getElementById('brand').value,
-                    total_weight: parseInt(document.getElementById('totalWeight').value),
-                    remaining_weight: parseInt(document.getElementById('remainingWeight').value),
+                    total_weight: parseFloat(document.getElementById('totalWeight').value),
+                    remaining_weight: parseFloat(document.getElementById('remainingWeight').value),
                     price: parseFloat(document.getElementById('price').value) || 0
                 };
 
@@ -1615,10 +1617,10 @@
         async function saveEdit() {
             if (editingId) {
                 try {
-                    const weight = parseInt(editWeightInput.value);
+                    const newWeight = parseFloat(editWeightInput.value);
                     const updated = await apiFetch(`/filaments/${editingId}`, {
                         method: 'PUT',
-                        body: JSON.stringify({ remaining_weight: weight })
+                        body: JSON.stringify({ remaining_weight: newWeight })
                     });
 
                     const index = filaments.findIndex(f => f.id === editingId);
@@ -1707,11 +1709,11 @@
                     filamentsHtml = print.filaments.map(f => `
                         <div class="history-filament" style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.25rem;">
                             <div style="width: 10px; height: 10px; border-radius: 50%; background: ${f.color}; border: 1px solid var(--border);"></div>
-                            <span>${f.material} - ${f.brand} ${f.color_name} (${f.weight_used}g)</span>
+                            <span>${f.material} - ${f.brand} ${f.color_name} (${Number(f.weight_used).toFixed(1)}g)</span>
                         </div>
                     `).join('');
                 } else {
-                    filamentsHtml = `<div class="history-filament">${print.material} - ${print.brand} ${print.color_name} (${print.weight_used}g)</div>`;
+                    filamentsHtml = `<div class="history-filament">${print.material} - ${print.brand} ${print.color_name} (${Number(print.weight_used).toFixed(1)}g)</div>`;
                 }
 
                 return `
@@ -1731,7 +1733,7 @@
 
             const usedFilaments = filamentRows.map(row => ({
                 filament_id: parseInt(row.querySelector('.print-filament-select').value),
-                weight_used: parseInt(row.querySelector('.print-weight-input').value)
+                weight_used: parseFloat(row.querySelector('.print-weight-input').value)
             })).filter(f => !isNaN(f.filament_id) && !isNaN(f.weight_used));
 
             if (!name || usedFilaments.length === 0) {
@@ -1760,7 +1762,7 @@
                 loadStats();
                 closePrintModal();
                 const totalWeight = usedFilaments.reduce((sum, f) => sum + f.weight_used, 0);
-                showToast(`Print logged! Total weight: ${totalWeight}g`, 'success');
+                showToast(`Print logged! Total weight: ${totalWeight.toFixed(1)}g`, 'success');
 
                 // Check for low filament warnings
                 result.filaments.forEach(f => {
@@ -1783,7 +1785,7 @@
                     <option value="">Select spool...</option>
                     ${filaments.map(f => `<option value="${f.id}">${f.material} - ${f.brand} ${f.color_name} (${f.remaining_weight}g left)</option>`).join('')}
                 </select>
-                <input type="number" class="print-weight-input" placeholder="Grams" min="1" style="flex: 1;" oninput="updatePrintCost()" required>
+                <input type="number" class="print-weight-input" placeholder="Grams" min="0" step="any" style="flex: 1;" oninput="updatePrintCost()" required>
                 <button type="button" class="btn-icon" onclick="removeFilamentRow(this)" style="color: var(--danger); border-color: var(--border);">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -1893,7 +1895,7 @@
                                 <div class="weight-fill" style="width: ${percentage}%"></div>
                             </div>
                             <div class="weight-text">
-                                <span class="weight-remaining">${f.remaining_weight}g remaining</span>
+                                <span class="weight-remaining">${Number(f.remaining_weight).toFixed(1)}g remaining</span>
                                 <span>${Math.round(percentage)}%</span>
                             </div>
                             ${f.price ? `<div class="spool-cost">$${f.price.toFixed(2)} total · <span>$${costPerGram}/g</span></div>` : ''}

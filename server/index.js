@@ -401,7 +401,8 @@ app.get('/api/stats', authenticateToken, (req, res) => {
         `SELECT COUNT(*) as total_spools,
                 SUM(remaining_weight) as total_weight,
                 COUNT(DISTINCT material) as material_types,
-                SUM((remaining_weight * 1.0 / total_weight) * price) as total_value
+                SUM((remaining_weight * 1.0 / total_weight) * price) as total_value,
+                SUM(price) as total_spent
          FROM filaments WHERE user_id = ?`,
         [req.user.userId],
         (err, row) => {
@@ -412,7 +413,8 @@ app.get('/api/stats', authenticateToken, (req, res) => {
                 totalSpools: row.total_spools || 0,
                 totalWeight: row.total_weight || 0,
                 materialTypes: row.material_types || 0,
-                totalValue: row.total_value || 0
+                totalValue: row.total_value || 0,
+                totalSpent: row.total_spent || 0
             });
         }
     );

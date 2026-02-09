@@ -1185,8 +1185,12 @@
                         <div class="stat-label">Total Weight</div>
                     </div>
                     <div class="stat">
-                        <div class="stat-value" id="statTotalValue">$0</div>
+                        <div class="stat-value" id="statTotalValue">€0</div>
                         <div class="stat-label">Inventory Value</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="statTotalSpent">€0</div>
+                        <div class="stat-label">Total Spent</div>
                     </div>
                     <div class="stat">
                         <div class="stat-value" id="statMaterialTypes">0</div>
@@ -1288,7 +1292,7 @@
                             </div>
 
                             <div class="form-group">
-                                <label>Price ($)</label>
+                                <label>Price (€)</label>
                                 <input type="number" id="price" placeholder="25.00" min="0" step="0.01">
                             </div>
 
@@ -1381,7 +1385,7 @@
                 </div>
                 <div class="cost-preview" id="costPreview" style="display: none;">
                     <div class="cost-preview-label">Estimated Cost</div>
-                    <div class="cost-preview-value" id="costValue">$0.00</div>
+                    <div class="cost-preview-value" id="costValue">€0.00</div>
                 </div>
                 <div class="modal-actions" style="margin-top: 1.5rem;">
                     <button class="btn btn-secondary" onclick="closePrintModal()">Cancel</button>
@@ -1563,7 +1567,8 @@
             document.getElementById('statTotalWeight').textContent = stats.totalWeight >= 1000
                 ? (stats.totalWeight / 1000).toFixed(2) + 'kg'
                 : stats.totalWeight + 'g';
-            document.getElementById('statTotalValue').textContent = '$' + stats.totalValue.toFixed(0);
+            document.getElementById('statTotalValue').textContent = '€' + stats.totalValue.toFixed(0);
+            document.getElementById('statTotalSpent').textContent = '€' + stats.totalSpent.toFixed(0);
             document.getElementById('statMaterialTypes').textContent = stats.materialTypes;
         }
 
@@ -1721,7 +1726,7 @@
                         <div class="history-date">${dateStr}</div>
                         <div class="history-print">${print.name}</div>
                         ${filamentsHtml}
-                        ${print.cost ? `<div class="history-cost">$${print.cost.toFixed(2)}</div>` : ''}
+                        ${print.cost ? `<div class="history-cost">€${print.cost.toFixed(2)}</div>` : ''}
                     </div>
                 `;
             }).join('');
@@ -1820,7 +1825,7 @@
             });
 
             if (hasData) {
-                costValue.textContent = '$' + totalCost.toFixed(2);
+                costValue.textContent = '€' + totalCost.toFixed(2);
                 costPreview.style.display = 'block';
             } else {
                 costPreview.style.display = 'none';
@@ -1898,7 +1903,7 @@
                                 <span class="weight-remaining">${Number(f.remaining_weight).toFixed(2)}g remaining</span>
                                 <span>${Math.round(percentage)}%</span>
                             </div>
-                            ${f.price ? `<div class="spool-cost">$${f.price.toFixed(2)} total · <span>$${costPerGram}/g</span></div>` : ''}
+                            ${f.price ? `<div class="spool-cost">€${f.price.toFixed(2)} total · <span>€${costPerGram}/g</span></div>` : ''}
                         </div>
                     </div>
                 `;

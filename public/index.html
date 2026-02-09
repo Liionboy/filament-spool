@@ -1642,6 +1642,11 @@
             `).join('');
         }
 
+        function selectBrand(brand) {
+            document.getElementById('brand').value = brand;
+            showToast(`Selected brand: ${brand}`, 'success');
+        }
+
         async function addQuickBrand() {
             const input = document.getElementById('newBrandInput');
             const brand = input.value.trim();

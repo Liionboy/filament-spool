@@ -1,0 +1,1947 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SPOOL | Filament Inventory</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Teko:wght@400;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0d0d0d;
+            --bg-panel: #1a1a1a;
+            --bg-card: #252525;
+            --border: #333;
+            --text-primary: #e8e8e8;
+            --text-secondary: #888;
+            --accent: #ff6b35;
+            --success: #00d084;
+            --danger: #ff3366;
+            --warning: #ffc107;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Space Mono', monospace;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            background-image:
+                radial-gradient(circle at 20% 80%, rgba(255, 107, 53, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(0, 208, 132, 0.03) 0%, transparent 50%),
+                repeating-linear-gradient(90deg, transparent, transparent 50px, rgba(255, 255, 255, 0.01) 50px, rgba(255, 255, 255, 0.01) 51px);
+        }
+
+        /* Header */
+        .header {
+            border-bottom: 2px solid var(--border);
+            padding: 1.5rem 2rem;
+            background: var(--bg-panel);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+            border: 3px solid var(--accent);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .logo-icon::before {
+            content: '';
+            position: absolute;
+            width: 60%;
+            height: 60%;
+            border: 2px solid var(--accent);
+            border-radius: 50%;
+        }
+
+        .logo-icon::after {
+            content: '';
+            position: absolute;
+            width: 20%;
+            height: 20%;
+            background: var(--accent);
+            border-radius: 50%;
+        }
+
+        .logo-text {
+            font-family: 'Teko', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            line-height: 1;
+        }
+
+        .logo-text span {
+            color: var(--accent);
+        }
+
+        .stats {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .stat {
+            text-align: right;
+        }
+
+        .stat-value {
+            font-family: 'Teko', sans-serif;
+            font-size: 2rem;
+            font-weight: 600;
+            line-height: 1;
+            color: var(--accent);
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: var(--text-secondary);
+        }
+
+        /* Main Layout */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 2rem;
+        }
+
+        /* Add Form Panel */
+        .panel {
+            background: var(--bg-panel);
+            border: 2px solid var(--border);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            background: var(--bg-card);
+            padding: 1rem 1.25rem;
+            border-bottom: 2px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .panel-header h2 {
+            font-family: 'Teko', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+        }
+
+        .panel-icon {
+            width: 24px;
+            height: 24px;
+            stroke: var(--accent);
+            stroke-width: 2;
+            fill: none;
+        }
+
+        .panel-body {
+            padding: 1.25rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            background: var(--bg-dark);
+            border: 2px solid var(--border);
+            border-radius: 4px;
+            padding: 0.75rem 1rem;
+            color: var(--text-primary);
+            font-family: 'Space Mono', monospace;
+            font-size: 0.9rem;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .color-picker-wrapper {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+
+        input[type="color"] {
+            width: 50px !important;
+            height: 44px;
+            padding: 2px !important;
+            cursor: pointer;
+        }
+
+        .color-preview {
+            flex: 1;
+            height: 44px;
+            border-radius: 4px;
+            border: 2px solid var(--border);
+            transition: transform 0.2s;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 1rem;
+            background: var(--accent);
+            border: none;
+            border-radius: 4px;
+            color: var(--bg-dark);
+            font-family: 'Space Mono', monospace;
+            font-weight: 700;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(255, 107, 53, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        /* Filters */
+        .filters {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-chip {
+            padding: 0.5rem 1rem;
+            background: var(--bg-panel);
+            border: 2px solid var(--border);
+            border-radius: 4px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .filter-chip:hover {
+            border-color: var(--text-secondary);
+        }
+
+        .filter-chip.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: var(--bg-dark);
+            font-weight: 700;
+        }
+
+        /* Spool Grid */
+        .spool-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .spool-card {
+            background: var(--bg-panel);
+            border: 2px solid var(--border);
+            border-radius: 4px;
+            overflow: hidden;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .spool-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--filament-color, var(--accent));
+            transition: height 0.3s;
+        }
+
+        .spool-card:hover::before {
+            height: 8px;
+        }
+
+        .spool-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+            border-color: var(--filament-color, var(--border));
+        }
+
+        .spool-visual {
+            height: 140px;
+            background: var(--bg-card);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .spool-visual::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(0deg,
+                    transparent,
+                    transparent 2px,
+                    rgba(0, 0, 0, 0.1) 2px,
+                    rgba(0, 0, 0, 0.1) 4px);
+        }
+
+        .spool-3d {
+            width: 100px;
+            height: 80px;
+            position: relative;
+            transform-style: preserve-3d;
+            animation: none;
+        }
+
+        .spool-card:hover .spool-3d {
+            animation: rotate 8s linear infinite;
+        }
+
+        @keyframes rotate {
+            from {
+                transform: rotateY(0deg);
+            }
+
+            to {
+                transform: rotateY(360deg);
+            }
+        }
+
+        .spool-side {
+            position: absolute;
+            width: 20px;
+            height: 80px;
+            background: linear-gradient(90deg, #444, #666, #444);
+            border-radius: 2px;
+        }
+
+        .spool-side.left {
+            left: 0;
+            transform: translateZ(30px);
+        }
+
+        .spool-side.right {
+            right: 0;
+            transform: translateZ(30px);
+        }
+
+        .spool-filament {
+            position: absolute;
+            left: 20px;
+            right: 20px;
+            top: 10px;
+            bottom: 10px;
+            background: var(--filament-color, var(--accent));
+            border-radius: 4px;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.3);
+            background-image: repeating-linear-gradient(90deg,
+                    transparent,
+                    transparent 1px,
+                    rgba(0, 0, 0, 0.1) 1px,
+                    rgba(0, 0, 0, 0.1) 3px);
+        }
+
+        .spool-core {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%) translateZ(31px);
+            width: 16px;
+            height: 60px;
+            background: #222;
+            border-radius: 2px;
+            border: 2px solid #444;
+        }
+
+        .spool-info {
+            padding: 1.25rem;
+        }
+
+        .spool-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .spool-material {
+            font-family: 'Teko', sans-serif;
+            font-size: 1.75rem;
+            font-weight: 600;
+            line-height: 1;
+            color: var(--filament-color, var(--text-primary));
+        }
+
+        .spool-brand {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-top: 0.25rem;
+        }
+
+        .spool-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text-secondary);
+        }
+
+        .btn-icon:hover {
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
+        .btn-icon.edit:hover {
+            border-color: var(--warning);
+            color: var(--warning);
+        }
+
+        .weight-bar {
+            background: var(--bg-dark);
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 0.75rem;
+            border: 1px solid var(--border);
+        }
+
+        .weight-fill {
+            height: 100%;
+            background: var(--filament-color, var(--accent));
+            transition: width 0.5s ease;
+            position: relative;
+        }
+
+        .weight-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 20px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3));
+        }
+
+        .weight-text {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .weight-remaining {
+            color: var(--text-primary);
+            font-weight: 700;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            grid-column: 1 / -1;
+        }
+
+        .empty-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1.5rem;
+            stroke: var(--border);
+            stroke-width: 1.5;
+            fill: none;
+        }
+
+        .empty-state h3 {
+            font-family: 'Teko', sans-serif;
+            font-size: 1.75rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-state p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: var(--bg-panel);
+            border: 2px solid var(--border);
+            border-radius: 4px;
+            width: 90%;
+            max-width: 400px;
+            padding: 1.5rem;
+            transform: scale(0.95);
+            transition: transform 0.3s;
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1);
+        }
+
+        .modal h3 {
+            font-family: 'Teko', sans-serif;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .modal-actions .btn {
+            flex: 1;
+        }
+
+        .btn-secondary {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 2px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border);
+            box-shadow: none;
+        }
+
+        /* Quick Brands */
+        .quick-brands {
+            margin-bottom: 1.25rem;
+        }
+
+        .quick-brands-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .brand-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .brand-chip {
+            padding: 0.4rem 0.75rem;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .brand-chip:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .brand-chip .remove-brand {
+            margin-left: 0.4rem;
+            opacity: 0;
+            transition: opacity 0.2s;
+            color: var(--danger);
+        }
+
+        .brand-chip:hover .remove-brand {
+            opacity: 1;
+        }
+
+        .add-brand-input {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .add-brand-input input {
+            flex: 1;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 0.4rem 0.75rem;
+            color: var(--text-primary);
+            font-family: 'Space Mono', monospace;
+            font-size: 0.75rem;
+        }
+
+        .add-brand-input button {
+            padding: 0.4rem 0.75rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text-primary);
+            font-family: 'Space Mono', monospace;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .add-brand-input button:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        /* Low Stock Alert */
+        .low-stock-badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: var(--danger);
+            color: white;
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.7;
+            }
+        }
+
+        .spool-card.low-stock::before {
+            background: var(--danger) !important;
+        }
+
+        /* Toast */
+        .toast-container {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            z-index: 1001;
+        }
+
+        .toast {
+            background: var(--bg-panel);
+            border: 2px solid var(--border);
+            border-left: 4px solid var(--accent);
+            border-radius: 4px;
+            padding: 1rem 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            animation: slideIn 0.3s ease;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .toast.success {
+            border-left-color: var(--success);
+        }
+
+        .toast.error {
+            border-left-color: var(--danger);
+        }
+
+        .toast.warning {
+            border-left-color: var(--warning);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .toast-icon {
+            width: 20px;
+            height: 20px;
+            stroke-width: 2.5;
+            fill: none;
+            stroke: var(--accent);
+        }
+
+        .toast.success .toast-icon {
+            stroke: var(--success);
+        }
+
+        .toast.error .toast-icon {
+            stroke: var(--danger);
+        }
+
+        .toast.warning .toast-icon {
+            stroke: var(--warning);
+        }
+
+        /* Print History */
+        .history-panel {
+            position: fixed;
+            right: -400px;
+            top: 85px;
+            bottom: 0;
+            width: 380px;
+            background: var(--bg-panel);
+            border-left: 2px solid var(--border);
+            transition: right 0.3s ease;
+            z-index: 99;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .history-panel.open {
+            right: 0;
+        }
+
+        .history-header {
+            padding: 1.25rem;
+            border-bottom: 2px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .history-header h3 {
+            font-family: 'Teko', sans-serif;
+            font-size: 1.5rem;
+        }
+
+        .close-history {
+            width: 32px;
+            height: 32px;
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text-secondary);
+        }
+
+        .close-history:hover {
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
+        .history-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+
+        .history-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .history-date {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.5rem;
+        }
+
+        .history-print {
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .history-filament {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .history-cost {
+            font-family: 'Teko', sans-serif;
+            font-size: 1.25rem;
+            color: var(--success);
+            margin-top: 0.5rem;
+        }
+
+        .history-btn {
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            border-radius: 4px;
+            padding: 0.5rem 1rem;
+            color: var(--text-primary);
+            font-family: 'Space Mono', monospace;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .history-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        /* Print Modal */
+        .print-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1002;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .print-modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .print-modal {
+            background: var(--bg-panel);
+            border: 2px solid var(--border);
+            border-radius: 4px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 1.5rem;
+            transform: scale(0.95);
+            transition: transform 0.3s;
+        }
+
+        .print-modal-overlay.active .print-modal {
+            transform: scale(1);
+        }
+
+        .filament-select-row {
+            display: flex;
+            gap: 1rem;
+            align-items: end;
+        }
+
+        .cost-preview {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        .cost-preview-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .cost-preview-value {
+            font-family: 'Teko', sans-serif;
+            font-size: 2rem;
+            color: var(--success);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        /* Cost display on spool card */
+        .spool-cost {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+        }
+
+        .spool-cost span {
+            color: var(--success);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+            padding: 1rem;
+            background: var(--bg-card);
+            border-radius: 4px;
+        }
+
+        .stat-box {
+            text-align: center;
+        }
+
+        .stat-box-value {
+            font-family: 'Teko', sans-serif;
+            font-size: 1.5rem;
+            color: var(--accent);
+        }
+
+        .stat-box-label {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-secondary);
+        }
+
+        @media (max-width: 900px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+
+            .stats {
+                display: none;
+            }
+
+            .header-actions {
+                display: none;
+            }
+
+            .history-panel {
+                width: 100%;
+                right: -100%;
+                top: 73px;
+            }
+
+            .history-panel.open {
+                right: 0;
+            }
+        }
+
+        /* Auth Styles */
+        .auth-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg-dark);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            padding: 2rem;
+        }
+
+        .auth-card {
+            background: var(--bg-panel);
+            border: 2px solid var(--border);
+            border-radius: 4px;
+            width: 100%;
+            max-width: 400px;
+            padding: 2rem;
+        }
+
+        .auth-card h1 {
+            font-family: 'Teko', sans-serif;
+            font-size: 2.5rem;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .auth-card h1 span {
+            color: var(--accent);
+        }
+
+        .auth-toggle {
+            text-align: center;
+            margin-top: 1.5rem;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .auth-toggle span {
+            color: var(--accent);
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        #app {
+            display: none;
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logout-btn {
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 0.4rem 0.8rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+        }
+
+        .logout-btn:hover {
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="authContainer" class="auth-container">
+        <div class="auth-card">
+            <h1>SPOO<span>L</span></h1>
+            <div id="loginView">
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label>Username or Email</label>
+                        <input type="text" id="loginUsername" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="loginPassword" required>
+                    </div>
+                    <button type="submit" class="btn">Login</button>
+                </form>
+                <div class="auth-toggle">
+                    Don't have an account? <span onclick="toggleAuthView('register')">Register</span>
+                </div>
+            </div>
+            <div id="registerView" style="display: none;">
+                <form id="registerForm">
+                    <div class="form-group">
+                        <label>Username</label>
+                        <input type="text" id="regUsername" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="regEmail" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="regPassword" required>
+                    </div>
+                    <button type="submit" class="btn">Create Account</button>
+                </form>
+                <div class="auth-toggle">
+                    Already have an account? <span onclick="toggleAuthView('login')">Login</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="app">
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon"></div>
+                    <div class="logo-text">SPOO<span>L</span></div>
+                </div>
+                <div class="user-menu">
+                    <div id="usernameDisplay" style="font-size: 0.8rem; color: var(--text-secondary);"></div>
+                    <button class="logout-btn" onclick="logout()">Logout</button>
+                </div>
+                <div class="stats">
+                    <div class="stat">
+                        <div class="stat-value" id="statTotalSpools">0</div>
+                        <div class="stat-label">Spools</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="statTotalWeight">0g</div>
+                        <div class="stat-label">Total Weight</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="statTotalValue">$0</div>
+                        <div class="stat-label">Inventory Value</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="statMaterialTypes">0</div>
+                        <div class="stat-label">Materials</div>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button class="history-btn" onclick="openPrintModal()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M12 5v14M5 12h14" />
+                        </svg>
+                        Log Print
+                    </button>
+                    <button class="history-btn" onclick="toggleHistory()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <polyline points="12 8 12 12 16 16" />
+                            <circle cx="12" cy="12" r="10" />
+                        </svg>
+                        History
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main class="container">
+            <aside class="sidebar">
+                <div class="panel">
+                    <div class="panel-header">
+                        <svg class="panel-icon" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="12" y1="8" x2="12" y2="16" />
+                            <line x1="8" y1="12" x2="16" y2="12" />
+                        </svg>
+                        <h2>Add Filament</h2>
+                    </div>
+                    <div class="panel-body">
+                        <form id="addForm">
+                            <div class="form-group">
+                                <label>Material Type</label>
+                                <select id="material" required>
+                                    <option value="">Select material...</option>
+                                    <option value="PLA">PLA</option>
+                                    <option value="PLA+">PLA+</option>
+                                    <option value="ABS">ABS</option>
+                                    <option value="PETG">PETG</option>
+                                    <option value="TPU">TPU (Flexible)</option>
+                                    <option value="ASA">ASA</option>
+                                    <option value="NYLON">Nylon</option>
+                                    <option value="PC">Polycarbonate</option>
+                                    <option value="WOOD">Wood Fill</option>
+                                    <option value="METAL">Metal Fill</option>
+                                    <option value="CARBON">Carbon Fiber</option>
+                                    <option value="OTHER">Other</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Color Name</label>
+                                <input type="text" id="colorName" placeholder="e.g., Galaxy Black" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Color</label>
+                                <div class="color-picker-wrapper">
+                                    <input type="color" id="color" value="#ff6b35">
+                                    <div class="color-preview" id="colorPreview"></div>
+                                </div>
+                            </div>
+
+                            <div class="quick-brands">
+                                <div class="quick-brands-label">Quick Brands (click to fill)</div>
+                                <div class="brand-chips" id="brandChips">
+                                    <!-- Populated by JS -->
+                                </div>
+                                <div class="add-brand-input">
+                                    <input type="text" id="newBrandInput" placeholder="Add brand...">
+                                    <button type="button" onclick="addQuickBrand()">Add</button>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Brand</label>
+                                <input type="text" id="brand" placeholder="e.g., Prusament" required>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Total Weight (g)</label>
+                                    <input type="number" id="totalWeight" placeholder="1000" min="1" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Remaining (g)</label>
+                                    <input type="number" id="remainingWeight" placeholder="1000" min="0" required>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Price ($)</label>
+                                <input type="number" id="price" placeholder="25.00" min="0" step="0.01">
+                            </div>
+
+                            <button type="submit" class="btn">Add to Inventory</button>
+                        </form>
+                    </div>
+                </div>
+            </aside>
+
+            <section class="main-content">
+                <div class="filters" id="filters">
+                    <div class="filter-chip active" data-filter="all">All</div>
+                    <div class="filter-chip" data-filter="PLA">PLA</div>
+                    <div class="filter-chip" data-filter="PETG">PETG</div>
+                    <div class="filter-chip" data-filter="ABS">ABS</div>
+                    <div class="filter-chip" data-filter="TPU">TPU</div>
+                    <div class="filter-chip" data-filter="OTHER">Other</div>
+                </div>
+
+                <div class="spool-grid" id="spoolGrid">
+                    <div class="empty-state">
+                        <svg class="empty-icon" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M12 8v8M8 12h8" />
+                        </svg>
+                        <h3>Your Rack is Empty</h3>
+                        <p>Add your first filament spool to get started</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <div class="modal-overlay" id="editModal">
+            <div class="modal">
+                <h3>Update Weight</h3>
+                <div class="form-group">
+                    <label>Remaining Weight (g)</label>
+                    <input type="number" id="editWeight" min="0">
+                </div>
+                <div class="modal-actions">
+                    <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                    <button class="btn" onclick="saveEdit()">Save</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Print History Panel -->
+        <div class="history-panel" id="historyPanel">
+            <div class="history-header">
+                <h3>Print History</h3>
+                <button class="close-history" onclick="toggleHistory()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                </button>
+            </div>
+            <div class="history-content" id="historyContent">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
+        <!-- Log Print Modal -->
+        <div class="print-modal-overlay" id="printModal">
+            <div class="print-modal">
+                <h3>Log a Print</h3>
+                <div class="form-group">
+                    <label>What did you print?</label>
+                    <input type="text" id="printName" placeholder="e.g., Benchy, Phone Stand, etc." required>
+                </div>
+                <div class="form-group">
+                    <label>Filament Used</label>
+                    <div class="filament-select-row">
+                        <select id="printFilament" style="flex: 2;">
+                            <option value="">Select spool...</option>
+                        </select>
+                        <input type="number" id="printWeight" placeholder="Grams used" min="1" style="flex: 1;"
+                            required>
+                    </div>
+                </div>
+                <div class="cost-preview" id="costPreview" style="display: none;">
+                    <div class="cost-preview-label">Estimated Cost</div>
+                    <div class="cost-preview-value" id="costValue">$0.00</div>
+                </div>
+                <div class="modal-actions" style="margin-top: 1.5rem;">
+                    <button class="btn btn-secondary" onclick="closePrintModal()">Cancel</button>
+                    <button class="btn" onclick="savePrint()">Log Print</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        // API Configuration
+        const API_URL = '/api';
+        let token = localStorage.getItem('filament_token');
+        let user = JSON.parse(localStorage.getItem('filament_user'));
+
+        // State
+        let filaments = [];
+        let quickBrands = [];
+        let printHistory = [];
+        let currentFilter = 'all';
+        let editingId = null;
+        let selectedFilamentForPrint = null;
+
+        // Elements
+        const authContainer = document.getElementById('authContainer');
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        const app = document.getElementById('app');
+        const usernameDisplay = document.getElementById('usernameDisplay');
+
+        const addForm = document.getElementById('addForm');
+        const spoolGrid = document.getElementById('spoolGrid');
+        const filters = document.getElementById('filters');
+        const colorPicker = document.getElementById('color');
+        const colorPreview = document.getElementById('colorPreview');
+        const editModal = document.getElementById('editModal');
+        const editWeightInput = document.getElementById('editWeight');
+        const brandInput = document.getElementById('brand');
+        const printModal = document.getElementById('printModal');
+        const printFilamentSelect = document.getElementById('printFilament');
+        const printWeightInput = document.getElementById('printWeight');
+        const printNameInput = document.getElementById('printName');
+        const costPreview = document.getElementById('costPreview');
+        const costValue = document.getElementById('costValue');
+
+        // Initialize
+        if (token) {
+            showApp();
+        } else {
+            showAuth();
+        }
+
+        colorPreview.style.backgroundColor = colorPicker.value;
+
+        // Auth Functions
+        function showAuth() {
+            authContainer.style.display = 'flex';
+            app.style.display = 'none';
+        }
+
+        function showApp() {
+            authContainer.style.display = 'none';
+            app.style.display = 'block';
+            usernameDisplay.textContent = user.username;
+            loadData();
+        }
+
+        function toggleAuthView(view) {
+            document.getElementById('loginView').style.display = view === 'login' ? 'block' : 'none';
+            document.getElementById('registerView').style.display = view === 'register' ? 'block' : 'none';
+        }
+
+        async function logout() {
+            localStorage.removeItem('filament_token');
+            localStorage.removeItem('filament_user');
+            token = null;
+            user = null;
+            showAuth();
+        }
+
+        // API Helper
+        async function apiFetch(endpoint, options = {}) {
+            const headers = {
+                'Content-Type': 'application/json',
+                ...options.headers
+            };
+
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+
+            const response = await fetch(`${API_URL}${endpoint}`, {
+                ...options,
+                headers
+            });
+
+            if (response.status === 401 || response.status === 403) {
+                logout();
+                throw new Error('Session expired');
+            }
+
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.error || 'Something went wrong');
+            }
+
+            return data;
+        }
+
+        // Auth Event Listeners
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                const username = document.getElementById('loginUsername').value;
+                const password = document.getElementById('loginPassword').value;
+                const data = await apiFetch('/auth/login', {
+                    method: 'POST',
+                    body: JSON.stringify({ username, password })
+                });
+                token = data.token;
+                user = data.user;
+                localStorage.setItem('filament_token', token);
+                localStorage.setItem('filament_user', JSON.stringify(user));
+                showApp();
+                showToast('Welcome back!', 'success');
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        });
+
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                const username = document.getElementById('regUsername').value;
+                const email = document.getElementById('regEmail').value;
+                const password = document.getElementById('regPassword').value;
+                const data = await apiFetch('/auth/register', {
+                    method: 'POST',
+                    body: JSON.stringify({ username, email, password })
+                });
+                token = data.token;
+                user = data.user;
+                localStorage.setItem('filament_token', token);
+                localStorage.setItem('filament_user', JSON.stringify(user));
+                showApp();
+                showToast('Account created successfully!', 'success');
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        });
+
+        // Data Loading
+        async function loadData() {
+            try {
+                const [fils, brands, prints, stats] = await Promise.all([
+                    apiFetch('/filaments'),
+                    apiFetch('/brands'),
+                    apiFetch('/prints'),
+                    apiFetch('/stats')
+                ]);
+
+                filaments = fils;
+                quickBrands = brands;
+                printHistory = prints;
+
+                renderBrandChips();
+                render();
+                renderHistory();
+                updateStatsFromResponse(stats);
+            } catch (err) {
+                showToast('Failed to load data', 'error');
+            }
+        }
+
+        function updateStatsFromResponse(stats) {
+            document.getElementById('statTotalSpools').textContent = stats.totalSpools;
+            document.getElementById('statTotalWeight').textContent = stats.totalWeight >= 1000
+                ? (stats.totalWeight / 1000).toFixed(1) + 'kg'
+                : stats.totalWeight + 'g';
+            document.getElementById('statTotalValue').textContent = '$' + stats.totalValue.toFixed(0);
+            document.getElementById('statMaterialTypes').textContent = stats.materialTypes;
+        }
+
+        // Spool Functions
+        async function addFilament() {
+            try {
+                const filament = {
+                    material: document.getElementById('material').value,
+                    color_name: document.getElementById('colorName').value,
+                    color: document.getElementById('color').value,
+                    brand: document.getElementById('brand').value,
+                    total_weight: parseInt(document.getElementById('totalWeight').value),
+                    remaining_weight: parseInt(document.getElementById('remainingWeight').value),
+                    price: parseFloat(document.getElementById('price').value) || 0
+                };
+
+                const newFil = await apiFetch('/filaments', {
+                    method: 'POST',
+                    body: JSON.stringify(filament)
+                });
+
+                filaments.unshift(newFil);
+                render();
+                addForm.reset();
+                colorPreview.style.backgroundColor = '#ff6b35';
+                showToast('Filament added successfully', 'success');
+
+                // Refresh brands if new
+                const brands = await apiFetch('/brands');
+                quickBrands = brands;
+                renderBrandChips();
+                loadStats();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function deleteFilament(id) {
+            if (!confirm('Are you sure you want to delete this filament?')) return;
+            try {
+                await apiFetch(`/filaments/${id}`, { method: 'DELETE' });
+                filaments = filaments.filter(f => f.id !== id);
+                render();
+                loadStats();
+                showToast('Filament removed', 'error');
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function saveEdit() {
+            if (editingId) {
+                try {
+                    const weight = parseInt(editWeightInput.value);
+                    const updated = await apiFetch(`/filaments/${editingId}`, {
+                        method: 'PUT',
+                        body: JSON.stringify({ remaining_weight: weight })
+                    });
+
+                    const index = filaments.findIndex(f => f.id === editingId);
+                    filaments[index] = updated;
+                    render();
+                    closeModal();
+                    loadStats();
+                    showToast('Weight updated', 'success');
+                } catch (err) {
+                    showToast(err.message, 'error');
+                }
+            }
+        }
+
+        async function loadStats() {
+            try {
+                const stats = await apiFetch('/stats');
+                updateStatsFromResponse(stats);
+            } catch (err) { }
+        }
+
+        // Quick Brands
+        function renderBrandChips() {
+            const container = document.getElementById('brandChips');
+            container.innerHTML = quickBrands.map(brand => `
+                <div class="brand-chip" onclick="selectBrand('${brand}')">
+                    ${brand}
+                    <span class="remove-brand" onclick="event.stopPropagation(); removeBrand('${brand}')">×</span>
+                </div>
+            `).join('');
+        }
+
+        async function addQuickBrand() {
+            const input = document.getElementById('newBrandInput');
+            const brand = input.value.trim();
+            if (brand) {
+                try {
+                    await apiFetch('/brands', {
+                        method: 'POST',
+                        body: JSON.stringify({ brand })
+                    });
+                    if (!quickBrands.includes(brand)) {
+                        quickBrands.push(brand);
+                        renderBrandChips();
+                    }
+                    input.value = '';
+                } catch (err) {
+                    showToast(err.message, 'error');
+                }
+            }
+        }
+
+        async function removeBrand(brand) {
+            try {
+                await apiFetch(`/brands/${encodeURIComponent(brand)}`, { method: 'DELETE' });
+                quickBrands = quickBrands.filter(b => b !== brand);
+                renderBrandChips();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        // History and Prints
+        function renderHistory() {
+            const container = document.getElementById('historyContent');
+            if (printHistory.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                        <p>No prints logged yet</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = printHistory.map(print => {
+                const date = new Date(print.created_at);
+                const dateStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                return `
+                    <div class="history-item">
+                        <div class="history-date">${dateStr}</div>
+                        <div class="history-print">${print.name}</div>
+                        <div class="history-filament">${print.material} - ${print.brand} ${print.color_name}</div>
+                        <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem;">${print.weight_used}g used</div>
+                        ${print.cost ? `<div class="history-cost">$${print.cost.toFixed(2)}</div>` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function savePrint() {
+            const name = printNameInput.value.trim();
+            const filament_id = printFilamentSelect.value;
+            const weight_used = parseInt(printWeightInput.value);
+
+            if (!name || !filament_id || !weight_used) {
+                showToast('Please fill in all fields', 'error');
+                return;
+            }
+
+            try {
+                const result = await apiFetch('/prints', {
+                    method: 'POST',
+                    body: JSON.stringify({ name, filament_id, weight_used })
+                });
+
+                printHistory.unshift(result);
+
+                // Update local filament weight
+                const filament = filaments.find(f => f.id == filament_id);
+                if (filament) {
+                    filament.remaining_weight = result.current_remaining;
+                }
+
+                render();
+                renderHistory();
+                loadStats();
+                closePrintModal();
+                showToast(`Print logged! Used ${weight_used}g`, 'success');
+
+                if ((result.current_remaining / filament.total_weight) < 0.2) {
+                    showToast(`${filament.material} is running low!`, 'warning');
+                }
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        // Original Render Helpers (adapted for API names)
+        function getFilteredFilaments() {
+            if (currentFilter === 'all') return filaments;
+            if (currentFilter === 'OTHER') {
+                const known = ['PLA', 'PLA+', 'ABS', 'PETG', 'TPU'];
+                return filaments.filter(f => !known.includes(f.material));
+            }
+            return filaments.filter(f => f.material === currentFilter);
+        }
+
+        function render() {
+            const filtered = getFilteredFilaments();
+
+            if (filtered.length === 0) {
+                spoolGrid.innerHTML = `
+                    <div class="empty-state">
+                        <svg class="empty-icon" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M12 8v8M8 12h8"/>
+                        </svg>
+                        <h3>${filaments.length === 0 ? 'Your Rack is Empty' : 'No Matches'}</h3>
+                        <p>${filaments.length === 0 ? 'Add your first filament spool to get started' : 'Try a different filter'}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            spoolGrid.innerHTML = filtered.map(f => {
+                const percentage = (f.remaining_weight / f.total_weight) * 100;
+                const isLowStock = percentage < 20;
+                const costPerGram = f.price ? (f.price / f.total_weight).toFixed(3) : null;
+
+                return `
+                    <div class="spool-card ${isLowStock ? 'low-stock' : ''}" style="--filament-color: ${f.color}">
+                        ${isLowStock ? '<div class="low-stock-badge">Low Stock</div>' : ''}
+                        <div class="spool-visual">
+                            <div class="spool-3d">
+                                <div class="spool-side left"></div>
+                                <div class="spool-side right"></div>
+                                <div class="spool-filament"></div>
+                                <div class="spool-core"></div>
+                            </div>
+                        </div>
+                        <div class="spool-info">
+                            <div class="spool-header">
+                                <div>
+                                    <div class="spool-material">${f.material}</div>
+                                    <div class="spool-brand">${f.brand} · ${f.color_name}</div>
+                                </div>
+                                <div class="spool-actions">
+                                    <button class="btn-icon edit" onclick="openEditModal(${f.id})" title="Edit weight">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                        </svg>
+                                    </button>
+                                    <button class="btn-icon" onclick="deleteFilament(${f.id})" title="Delete">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="3 6 5 6 21 6"/>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="weight-bar">
+                                <div class="weight-fill" style="width: ${percentage}%"></div>
+                            </div>
+                            <div class="weight-text">
+                                <span class="weight-remaining">${f.remaining_weight}g remaining</span>
+                                <span>${Math.round(percentage)}%</span>
+                            </div>
+                            ${f.price ? `<div class="spool-cost">$${f.price.toFixed(2)} total · <span>$${costPerGram}/g</span></div>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Remaining helpers
+        function openEditModal(id) {
+            editingId = id;
+            const filament = filaments.find(f => f.id === id);
+            editWeightInput.value = filament.remaining_weight;
+            editModal.classList.add('active');
+        }
+
+        function closeModal() {
+            editModal.classList.remove('active');
+            editingId = null;
+        }
+
+        function toggleHistory() {
+            document.getElementById('historyPanel').classList.toggle('open');
+        }
+
+        function openPrintModal() {
+            if (filaments.length === 0) {
+                showToast('Add some filament first!', 'warning');
+                return;
+            }
+
+            printFilamentSelect.innerHTML = '<option value="">Select spool...</option>' +
+                filaments.map(f => {
+                    return `<option value="${f.id}">${f.material} - ${f.brand} ${f.color_name} (${f.remaining_weight}g left)</option>`;
+                }).join('');
+
+            printModal.classList.add('active');
+        }
+
+        function closePrintModal() {
+            printModal.classList.remove('active');
+            printNameInput.value = '';
+            printFilamentSelect.value = '';
+            printWeightInput.value = '';
+            costPreview.style.display = 'none';
+        }
+
+        function updateCostPreview() {
+            const filamentId = printFilamentSelect.value;
+            const weight = parseFloat(printWeightInput.value);
+
+            if (!filamentId || !weight) {
+                costPreview.style.display = 'none';
+                return;
+            }
+
+            const filament = filaments.find(f => f.id == filamentId);
+            if (filament && filament.price) {
+                const costPerGram = filament.price / filament.total_weight;
+                const totalCost = costPerGram * weight;
+                costValue.textContent = '$' + totalCost.toFixed(2);
+                costPreview.style.display = 'block';
+            } else {
+                costPreview.style.display = 'none';
+            }
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+
+            let iconSvg = '';
+            if (type === 'success') {
+                iconSvg = '<polyline points="20 6 9 17 4 12"/>';
+            } else if (type === 'error') {
+                iconSvg = '<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>';
+            } else if (type === 'warning') {
+                iconSvg = '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>';
+            }
+
+            toast.innerHTML = `
+                <svg class="toast-icon" viewBox="0 0 24 24">
+                    ${iconSvg}
+                </svg>
+                <span>${message}</span>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        // Event Listeners (UI)
+        colorPicker.addEventListener('input', (e) => {
+            colorPreview.style.backgroundColor = e.target.value;
+        });
+
+        addForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            addFilament();
+        });
+
+        filters.addEventListener('click', (e) => {
+            if (e.target.classList.contains('filter-chip')) {
+                document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+                e.target.classList.add('active');
+                currentFilter = e.target.dataset.filter;
+                render();
+            }
+        });
+
+        printFilamentSelect.addEventListener('change', updateCostPreview);
+        printWeightInput.addEventListener('input', updateCostPreview);
+
+        document.getElementById('newBrandInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addQuickBrand();
+            }
+        });
+
+        editModal.addEventListener('click', (e) => {
+            if (e.target === editModal) closeModal();
+        });
+
+        printModal.addEventListener('click', (e) => {
+            if (e.target === printModal) closePrintModal();
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+                closePrintModal();
+            }
+        });
+    </script>
+</body>
+
+</html>

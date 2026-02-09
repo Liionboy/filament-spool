@@ -39,13 +39,26 @@ npm install
 
 ### 2. Configure Environment
 
-Create a `.env` file:
+Create a `.env` file from the template:
 
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env` and set a secure `JWT_SECRET`.
+Edit `.env` and configure the following variables:
+
+| Variable | Description | Example |
+| :--- | :--- | :--- |
+| `JWT_SECRET` | Secure key for password encryption and sessions | `your_random_secret_string` |
+| `SMTP_HOST` | Outgoing email server for alerts | `smtp.gmail.com` |
+| `SMTP_PORT` | SMTP port (usually 587 or 465) | `587` |
+| `SMTP_USER` | Your email address | `alerts@gmail.com` |
+| `SMTP_PASS` | Your email password or App Password | `xxxx xxxx xxxx xxxx` |
+| `SMTP_FROM` | Display name for the sender | `SPOOL Inventory` |
+| `NOTIFICATION_EMAIL` | Where alerts should be sent | `your-email@me.com` |
+
+> [!IMPORTANT]
+> For Gmail, you must use an **App Password** instead of your regular password. Enable 2FA first in your Google Account.
 
 ### 3. Initialize Database
 

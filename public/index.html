@@ -1561,7 +1561,7 @@
         function updateStatsFromResponse(stats) {
             document.getElementById('statTotalSpools').textContent = stats.totalSpools;
             document.getElementById('statTotalWeight').textContent = stats.totalWeight >= 1000
-                ? (stats.totalWeight / 1000).toFixed(1) + 'kg'
+                ? (stats.totalWeight / 1000).toFixed(2) + 'kg'
                 : stats.totalWeight + 'g';
             document.getElementById('statTotalValue').textContent = '$' + stats.totalValue.toFixed(0);
             document.getElementById('statMaterialTypes').textContent = stats.materialTypes;
@@ -1709,11 +1709,11 @@
                     filamentsHtml = print.filaments.map(f => `
                         <div class="history-filament" style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.25rem;">
                             <div style="width: 10px; height: 10px; border-radius: 50%; background: ${f.color}; border: 1px solid var(--border);"></div>
-                            <span>${f.material} - ${f.brand} ${f.color_name} (${Number(f.weight_used).toFixed(1)}g)</span>
+                            <span>${f.material} - ${f.brand} ${f.color_name} (${Number(f.weight_used).toFixed(2)}g)</span>
                         </div>
                     `).join('');
                 } else {
-                    filamentsHtml = `<div class="history-filament">${print.material} - ${print.brand} ${print.color_name} (${Number(print.weight_used).toFixed(1)}g)</div>`;
+                    filamentsHtml = `<div class="history-filament">${print.material} - ${print.brand} ${print.color_name} (${Number(print.weight_used).toFixed(2)}g)</div>`;
                 }
 
                 return `
@@ -1762,7 +1762,7 @@
                 loadStats();
                 closePrintModal();
                 const totalWeight = usedFilaments.reduce((sum, f) => sum + f.weight_used, 0);
-                showToast(`Print logged! Total weight: ${totalWeight.toFixed(1)}g`, 'success');
+                showToast(`Print logged! Total weight: ${totalWeight.toFixed(2)}g`, 'success');
 
                 // Check for low filament warnings
                 result.filaments.forEach(f => {
@@ -1783,7 +1783,7 @@
             row.innerHTML = `
                 <select class="print-filament-select" style="flex: 2;" onchange="updatePrintCost()">
                     <option value="">Select spool...</option>
-                    ${filaments.map(f => `<option value="${f.id}">${f.material} - ${f.brand} ${f.color_name} (${f.remaining_weight}g left)</option>`).join('')}
+                    ${filaments.map(f => `<option value="${f.id}">${f.material} - ${f.brand} ${f.color_name} (${Number(f.remaining_weight).toFixed(2)}g left)</option>`).join('')}
                 </select>
                 <input type="number" class="print-weight-input" placeholder="Grams" min="0" step="any" style="flex: 1;" oninput="updatePrintCost()" required>
                 <button type="button" class="btn-icon" onclick="removeFilamentRow(this)" style="color: var(--danger); border-color: var(--border);">
@@ -1895,7 +1895,7 @@
                                 <div class="weight-fill" style="width: ${percentage}%"></div>
                             </div>
                             <div class="weight-text">
-                                <span class="weight-remaining">${Number(f.remaining_weight).toFixed(1)}g remaining</span>
+                                <span class="weight-remaining">${Number(f.remaining_weight).toFixed(2)}g remaining</span>
                                 <span>${Math.round(percentage)}%</span>
                             </div>
                             ${f.price ? `<div class="spool-cost">$${f.price.toFixed(2)} total · <span>$${costPerGram}/g</span></div>` : ''}
@@ -1933,9 +1933,9 @@
                 <div class="filament-select-row" style="margin-bottom: 0.75rem;">
                     <select class="print-filament-select" style="flex: 2;" onchange="updatePrintCost()">
                         <option value="">Select spool...</option>
-                        ${filaments.map(f => `<option value="${f.id}">${f.material} - ${f.brand} ${f.color_name} (${f.remaining_weight}g left)</option>`).join('')}
+                        ${filaments.map(f => `<option value="${f.id}">${f.material} - ${f.brand} ${f.color_name} (${Number(f.remaining_weight).toFixed(2)}g left)</option>`).join('')}
                     </select>
-                    <input type="number" class="print-weight-input" placeholder="Grams" min="1" style="flex: 1;" oninput="updatePrintCost()" required>
+                    <input type="number" class="print-weight-input" placeholder="Grams" min="0" step="any" style="flex: 1;" oninput="updatePrintCost()" required>
                 </div>
             `;
 

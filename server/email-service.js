@@ -18,7 +18,7 @@ const sendLowFilamentAlert = async (filament, remainingWeight) => {
     });
 
     const mailOptions = {
-        from: `"Filament Inventory" <${process.env.SMTP_USER}>`,
+        from: process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER,
         to: process.env.ALERT_EMAIL || process.env.SMTP_USER,
         subject: `⚠️ Low Filament Alert: ${filament.brand} ${filament.color_name}`,
         text: `The following filament is running low:\n\nBrand: ${filament.brand}\nMaterial: ${filament.material}\nColor: ${filament.color_name}\nRemaining: ${remainingWeight}g\n\nTime to order more!`,

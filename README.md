@@ -51,11 +51,15 @@ Edit `.env` and configure the following variables:
 | :--- | :--- | :--- |
 | `JWT_SECRET` | Secure key for password encryption and sessions | `your_random_secret_string` |
 | `SMTP_HOST` | Outgoing email server for alerts | `smtp.gmail.com` |
-| `SMTP_PORT` | SMTP port (usually 587 or 465) | `587` |
-| `SMTP_USER` | Your email address | `alerts@gmail.com` |
+| `SMTP_PORT` | SMTP port (465 for SSL/TLS, 587 for STARTTLS) | `465` |
+| `SMTP_USER` | Your email address (for authentication) | `alerts@example.com` |
 | `SMTP_PASS` | Your email password or App Password | `xxxx xxxx xxxx xxxx` |
-| `SMTP_FROM` | Display name for the sender | `SPOOL Inventory` |
-| `NOTIFICATION_EMAIL` | Where alerts should be sent | `your-email@me.com` |
+| `SMTP_FROM_EMAIL` | The "From" address (often needs to match SMTP_USER) | `alerts@example.com` |
+| `ALERT_EMAIL` | Where alerts should be sent | `your-email@me.com` |
+| `LOW_FILAMENT_THRESHOLD`| Threshold to trigger alerts (in grams) | `200` |
+
+> [!TIP]
+> **Port 465 vs 587**: If you use port **465**, the app automatically enables "Secure" mode (SSL/TLS). For port **587**, it uses STARTTLS. If your Postfix server requires a specific "From" address, ensure `SMTP_FROM_EMAIL` matches it exactly.
 
 > [!IMPORTANT]
 > For Gmail, you must use an **App Password** instead of your regular password. Enable 2FA first in your Google Account.

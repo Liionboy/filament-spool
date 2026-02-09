@@ -183,6 +183,13 @@ app.put('/api/filaments/:id', authenticateToken, (req, res) => {
             }
 
             db.get('SELECT * FROM filaments WHERE id = ?', [filamentId], (err, row) => {
+                if (!err && row) {
+                    // Check for low filament alert on manual update too
+                    const threshold = parseInt(process.env.LOW_FILAMENT_THRESHOLD) || 200;
+                    if (row.remaining_weight <= threshold) {
+                        sendLowFilamentAlert(row, row.remaining_weight);
+                    }
+                }
                 res.json(row);
             });
         }

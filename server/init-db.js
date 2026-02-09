@@ -94,6 +94,28 @@ const initDatabase = async () => {
         });
     });
 
+    // Create print_filaments table (for multicolor support)
+    await new Promise((resolve, reject) => {
+        db.run(`
+            CREATE TABLE IF NOT EXISTS print_filaments (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                print_id INTEGER NOT NULL,
+                filament_id INTEGER,
+                material TEXT NOT NULL,
+                brand TEXT NOT NULL,
+                color_name TEXT NOT NULL,
+                color TEXT NOT NULL,
+                weight_used INTEGER NOT NULL,
+                cost REAL DEFAULT 0,
+                FOREIGN KEY (print_id) REFERENCES print_history(id) ON DELETE CASCADE,
+                FOREIGN KEY (filament_id) REFERENCES filaments(id) ON DELETE SET NULL
+            )
+        `, (err) => {
+            if (err) reject(err);
+            else resolve();
+        });
+    });
+
     // Insert default brands for demo user (if we create one)
     console.log('Database initialized successfully!');
     db.close();

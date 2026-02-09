@@ -1358,13 +1358,23 @@
                     <input type="text" id="printName" placeholder="e.g., Benchy, Phone Stand, etc." required>
                 </div>
                 <div class="form-group">
-                    <label>Filament Used</label>
-                    <div class="filament-select-row">
-                        <select id="printFilament" style="flex: 2;">
-                            <option value="">Select spool...</option>
-                        </select>
-                        <input type="number" id="printWeight" placeholder="Grams used" min="1" style="flex: 1;"
-                            required>
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <label style="margin-bottom: 0;">Filaments Used</label>
+                        <button type="button" class="history-btn" onclick="addFilamentRow()"
+                            style="padding: 0.25rem 0.5rem; font-size: 0.7rem;">
+                            + Add Filament
+                        </button>
+                    </div>
+                    <div id="filamentRowsContainer">
+                        <!-- Rows will be added here -->
+                        <div class="filament-select-row" style="margin-bottom: 0.75rem;">
+                            <select class="print-filament-select" style="flex: 2;" onchange="updatePrintCost()">
+                                <option value="">Select spool...</option>
+                            </select>
+                            <input type="number" class="print-weight-input" placeholder="Grams" min="1" style="flex: 1;"
+                                oninput="updatePrintCost()" required>
+                        </div>
                     </div>
                 </div>
                 <div class="cost-preview" id="costPreview" style="display: none;">
@@ -1412,8 +1422,7 @@
         const editWeightInput = document.getElementById('editWeight');
         const brandInput = document.getElementById('brand');
         const printModal = document.getElementById('printModal');
-        const printFilamentSelect = document.getElementById('printFilament');
-        const printWeightInput = document.getElementById('printWeight');
+        const filamentRowsContainer = document.getElementById('filamentRowsContainer');
         const printNameInput = document.getElementById('printName');
         const costPreview = document.getElementById('costPreview');
         const costValue = document.getElementById('costValue');
@@ -1692,12 +1701,24 @@
             container.innerHTML = printHistory.map(print => {
                 const date = new Date(print.created_at);
                 const dateStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                let filamentsHtml = '';
+                if (print.filaments && print.filaments.length > 0) {
+                    filamentsHtml = print.filaments.map(f => `
+                        <div class="history-filament" style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.25rem;">
+                            <div style="width: 10px; height: 10px; border-radius: 50%; background: ${f.color}; border: 1px solid var(--border);"></div>
+                            <span>${f.material} - ${f.brand} ${f.color_name} (${f.weight_used}g)</span>
+                        </div>
+                    `).join('');
+                } else {
+                    filamentsHtml = `<div class="history-filament">${print.material} - ${print.brand} ${print.color_name} (${print.weight_used}g)</div>`;
+                }
+
                 return `
                     <div class="history-item">
                         <div class="history-date">${dateStr}</div>
                         <div class="history-print">${print.name}</div>
-                        <div class="history-filament">${print.material} - ${print.brand} ${print.color_name}</div>
-                        <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem;">${print.weight_used}g used</div>
+                        ${filamentsHtml}
                         ${print.cost ? `<div class="history-cost">$${print.cost.toFixed(2)}</div>` : ''}
                     </div>
                 `;
@@ -1706,39 +1727,101 @@
 
         async function savePrint() {
             const name = printNameInput.value.trim();
-            const filament_id = printFilamentSelect.value;
-            const weight_used = parseInt(printWeightInput.value);
+            const filamentRows = Array.from(filamentRowsContainer.querySelectorAll('.filament-select-row'));
 
-            if (!name || !filament_id || !weight_used) {
-                showToast('Please fill in all fields', 'error');
+            const usedFilaments = filamentRows.map(row => ({
+                filament_id: parseInt(row.querySelector('.print-filament-select').value),
+                weight_used: parseInt(row.querySelector('.print-weight-input').value)
+            })).filter(f => !isNaN(f.filament_id) && !isNaN(f.weight_used));
+
+            if (!name || usedFilaments.length === 0) {
+                showToast('Please fill in print name and at least one filament', 'error');
                 return;
             }
 
             try {
                 const result = await apiFetch('/prints', {
                     method: 'POST',
-                    body: JSON.stringify({ name, filament_id, weight_used })
+                    body: JSON.stringify({ name, filaments: usedFilaments })
                 });
 
                 printHistory.unshift(result);
 
-                // Update local filament weight
-                const filament = filaments.find(f => f.id == filament_id);
-                if (filament) {
-                    filament.remaining_weight = result.current_remaining;
-                }
+                // Update local filament weights
+                result.filaments.forEach(f => {
+                    const localFil = filaments.find(fil => fil.id == f.filament_id);
+                    if (localFil) {
+                        localFil.remaining_weight -= f.weight_used;
+                    }
+                });
 
                 render();
                 renderHistory();
                 loadStats();
                 closePrintModal();
-                showToast(`Print logged! Used ${weight_used}g`, 'success');
+                const totalWeight = usedFilaments.reduce((sum, f) => sum + f.weight_used, 0);
+                showToast(`Print logged! Total weight: ${totalWeight}g`, 'success');
 
-                if ((result.current_remaining / filament.total_weight) < 0.2) {
-                    showToast(`${filament.material} is running low!`, 'warning');
-                }
+                // Check for low filament warnings
+                result.filaments.forEach(f => {
+                    const localFil = filaments.find(fil => fil.id == f.filament_id);
+                    if (localFil && (localFil.remaining_weight / localFil.total_weight) < 0.2) {
+                        showToast(`${localFil.material} (${localFil.color_name}) is running low!`, 'warning');
+                    }
+                });
             } catch (err) {
                 showToast(err.message, 'error');
+            }
+        }
+
+        function addFilamentRow() {
+            const row = document.createElement('div');
+            row.className = 'filament-select-row';
+            row.style.marginBottom = '0.75rem';
+            row.innerHTML = `
+                <select class="print-filament-select" style="flex: 2;" onchange="updatePrintCost()">
+                    <option value="">Select spool...</option>
+                    ${filaments.map(f => `<option value="${f.id}">${f.material} - ${f.brand} ${f.color_name} (${f.remaining_weight}g left)</option>`).join('')}
+                </select>
+                <input type="number" class="print-weight-input" placeholder="Grams" min="1" style="flex: 1;" oninput="updatePrintCost()" required>
+                <button type="button" class="btn-icon" onclick="removeFilamentRow(this)" style="color: var(--danger); border-color: var(--border);">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            `;
+            filamentRowsContainer.appendChild(row);
+        }
+
+        function removeFilamentRow(btn) {
+            btn.parentElement.remove();
+            updatePrintCost();
+        }
+
+        function updatePrintCost() {
+            const rows = Array.from(filamentRowsContainer.querySelectorAll('.filament-select-row'));
+            let totalCost = 0;
+            let hasData = false;
+
+            rows.forEach(row => {
+                const id = row.querySelector('.print-filament-select').value;
+                const weight = parseFloat(row.querySelector('.print-weight-input').value);
+
+                if (id && weight) {
+                    const f = filaments.find(fil => fil.id == id);
+                    if (f && f.price) {
+                        totalCost += (f.price / f.total_weight) * weight;
+                        hasData = true;
+                    }
+                }
+            });
+
+            if (hasData) {
+                costValue.textContent = '$' + totalCost.toFixed(2);
+                costPreview.style.display = 'block';
+            } else {
+                costPreview.style.display = 'none';
             }
         }
 
@@ -1843,10 +1926,16 @@
                 return;
             }
 
-            printFilamentSelect.innerHTML = '<option value="">Select spool...</option>' +
-                filaments.map(f => {
-                    return `<option value="${f.id}">${f.material} - ${f.brand} ${f.color_name} (${f.remaining_weight}g left)</option>`;
-                }).join('');
+            // Reset to one empty row
+            filamentRowsContainer.innerHTML = `
+                <div class="filament-select-row" style="margin-bottom: 0.75rem;">
+                    <select class="print-filament-select" style="flex: 2;" onchange="updatePrintCost()">
+                        <option value="">Select spool...</option>
+                        ${filaments.map(f => `<option value="${f.id}">${f.material} - ${f.brand} ${f.color_name} (${f.remaining_weight}g left)</option>`).join('')}
+                    </select>
+                    <input type="number" class="print-weight-input" placeholder="Grams" min="1" style="flex: 1;" oninput="updatePrintCost()" required>
+                </div>
+            `;
 
             printModal.classList.add('active');
         }
@@ -1854,30 +1943,11 @@
         function closePrintModal() {
             printModal.classList.remove('active');
             printNameInput.value = '';
-            printFilamentSelect.value = '';
-            printWeightInput.value = '';
+            filamentRowsContainer.innerHTML = '';
             costPreview.style.display = 'none';
         }
 
-        function updateCostPreview() {
-            const filamentId = printFilamentSelect.value;
-            const weight = parseFloat(printWeightInput.value);
 
-            if (!filamentId || !weight) {
-                costPreview.style.display = 'none';
-                return;
-            }
-
-            const filament = filaments.find(f => f.id == filamentId);
-            if (filament && filament.price) {
-                const costPerGram = filament.price / filament.total_weight;
-                const totalCost = costPerGram * weight;
-                costValue.textContent = '$' + totalCost.toFixed(2);
-                costPreview.style.display = 'block';
-            } else {
-                costPreview.style.display = 'none';
-            }
-        }
 
         function showToast(message, type = 'success') {
             const container = document.getElementById('toastContainer');
@@ -1921,9 +1991,6 @@
                 render();
             }
         });
-
-        printFilamentSelect.addEventListener('change', updateCostPreview);
-        printWeightInput.addEventListener('input', updateCostPreview);
 
         document.getElementById('newBrandInput').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {

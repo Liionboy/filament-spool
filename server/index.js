@@ -275,76 +275,124 @@ app.get('/api/prints', authenticateToken, (req, res) => {
             if (err) {
                 return res.status(500).json({ error: 'Failed to fetch print history' });
             }
-            res.json(rows);
-        }
-    );
-});
 
-app.post('/api/prints', authenticateToken, (req, res) => {
-    const { name, filament_id, weight_used, cost } = req.body;
+            // Fetch details for each print's filaments
+            const printIds = rows.map(r => r.id);
+            if (printIds.length === 0) return res.json([]);
 
-    if (!name || !filament_id || !weight_used) {
-        return res.status(400).json({ error: 'Missing required fields' });
-    }
-
-    // Get filament details
-    db.get(
-        'SELECT * FROM filaments WHERE id = ? AND user_id = ?',
-        [filament_id, req.user.userId],
-        (err, filament) => {
-            if (err || !filament) {
-                return res.status(404).json({ error: 'Filament not found' });
-            }
-
-            if (weight_used > filament.remaining_weight) {
-                return res.status(400).json({ error: 'Not enough filament remaining' });
-            }
-
-            // Update filament weight
-            const newWeight = filament.remaining_weight - weight_used;
-            db.run(
-                'UPDATE filaments SET remaining_weight = ? WHERE id = ?',
-                [newWeight, filament_id]
-            );
-
-            // Calculate cost if price exists
-            let printCost = cost || 0;
-            if (filament.price && !cost) {
-                printCost = (filament.price / filament.total_weight) * weight_used;
-            }
-
-            // Add to history
-            db.run(
-                `INSERT INTO print_history (user_id, name, filament_id, material, brand, color_name, color, weight_used, cost)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                [req.user.userId, name, filament_id, filament.material, filament.brand,
-                filament.color_name, filament.color, weight_used, printCost],
-                function (err) {
+            const placeholders = printIds.map(() => '?').join(',');
+            db.all(
+                `SELECT * FROM print_filaments WHERE print_id IN (${placeholders})`,
+                printIds,
+                (err, filaments) => {
                     if (err) {
-                        return res.status(500).json({ error: 'Failed to log print' });
+                        return res.status(500).json({ error: 'Failed to fetch print filaments' });
                     }
 
-                    db.get('SELECT * FROM print_history WHERE id = ?', [this.lastID], (err, row) => {
-                        if (err) {
-                            return res.status(500).json({ error: 'Failed to fetch created print' });
-                        }
-
-                        // Check for low filament
-                        const threshold = parseInt(process.env.LOW_FILAMENT_THRESHOLD) || 200;
-                        if (newWeight <= threshold) {
-                            db.get('SELECT * FROM filaments WHERE id = ?', [filament_id], (err, filament) => {
-                                if (!err && filament) {
-                                    sendLowFilamentAlert(filament, newWeight);
-                                }
-                            });
-                        }
-
-                        res.status(201).json({ ...row, current_remaining: newWeight });
+                    const printsWithFilaments = rows.map(print => {
+                        const usedFilaments = filaments.filter(f => f.print_id === print.id);
+                        return { ...print, filaments: usedFilaments };
                     });
+
+                    res.json(printsWithFilaments);
                 }
             );
         }
     );
+});
+
+app.post('/api/prints', authenticateToken, async (req, res) => {
+    const { name, filaments: usedFilaments } = req.body;
+
+    if (!name || !usedFilaments || !Array.isArray(usedFilaments) || usedFilaments.length === 0) {
+        return res.status(400).json({ error: 'Missing required fields or invalid filaments data' });
+    }
+
+    try {
+        // Use a transaction for consistency
+        db.serialize(() => {
+            db.run('BEGIN TRANSACTION');
+
+            let totalWeight = 0;
+            let totalCost = 0;
+            const processedFilaments = [];
+
+            // Helper to process filaments sequentially
+            const processFilaments = async () => {
+                for (const item of usedFilaments) {
+                    const filament = await new Promise((resolve, reject) => {
+                        db.get('SELECT * FROM filaments WHERE id = ? AND user_id = ?', [item.filament_id, req.user.userId], (err, row) => {
+                            if (err) reject(err);
+                            else resolve(row);
+                        });
+                    });
+
+                    if (!filament) throw new Error(`Filament ${item.filament_id} not found`);
+                    if (item.weight_used > filament.remaining_weight) throw new Error(`Not enough filament remaining in ${filament.brand} ${filament.color_name}`);
+
+                    const newWeight = filament.remaining_weight - item.weight_used;
+                    let printCost = (filament.price / filament.total_weight) * item.weight_used;
+
+                    db.run('UPDATE filaments SET remaining_weight = ? WHERE id = ?', [newWeight, item.filament_id]);
+
+                    totalWeight += item.weight_used;
+                    totalCost += printCost;
+                    processedFilaments.push({
+                        filament_id: item.filament_id,
+                        material: filament.material,
+                        brand: filament.brand,
+                        color_name: filament.color_name,
+                        color: filament.color,
+                        weight_used: item.weight_used,
+                        cost: printCost
+                    });
+
+                    // Check for low filament
+                    const threshold = parseInt(process.env.LOW_FILAMENT_THRESHOLD) || 200;
+                    if (newWeight <= threshold) {
+                        sendLowFilamentAlert(filament, newWeight);
+                    }
+                }
+            };
+
+            processFilaments().then(() => {
+                // Primary filament for backward compatibility (the first one)
+                const main = processedFilaments[0];
+
+                db.run(
+                    `INSERT INTO print_history (user_id, name, filament_id, material, brand, color_name, color, weight_used, cost)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [req.user.userId, name, main.filament_id, main.material, main.brand, main.color_name, main.color, totalWeight, totalCost],
+                    function (err) {
+                        if (err) {
+                            db.run('ROLLBACK');
+                            return res.status(500).json({ error: 'Failed to log print' });
+                        }
+
+                        const printId = this.lastID;
+                        const stmt = db.prepare(`INSERT INTO print_filaments (print_id, filament_id, material, brand, color_name, color, weight_used, cost)
+                                               VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
+
+                        processedFilaments.forEach(f => {
+                            stmt.run([printId, f.filament_id, f.material, f.brand, f.color_name, f.color, f.weight_used, f.cost]);
+                        });
+
+                        stmt.finalize();
+                        db.run('COMMIT');
+
+                        db.get('SELECT * FROM print_history WHERE id = ?', [printId], (err, row) => {
+                            res.status(201).json({ ...row, filaments: processedFilaments });
+                        });
+                    }
+                );
+            }).catch(err => {
+                db.run('ROLLBACK');
+                res.status(400).json({ error: err.message });
+            });
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Server error' });
+    }
 });
 
 // Stats Route

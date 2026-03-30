@@ -160,16 +160,16 @@ app.get('/api/filaments', authenticateToken, (req, res) => {
 });
 
 app.post('/api/filaments', authenticateToken, (req, res) => {
-    const { material, color_name, color, brand, total_weight, remaining_weight, price } = req.body;
+    const { material, color_name, color, brand, total_weight, remaining_weight, price, supplier_id } = req.body;
 
     if (!material || !color_name || !color || !brand || !total_weight) {
         return res.status(400).json({ error: 'Missing required fields' });
     }
 
     db.run(
-        `INSERT INTO filaments (user_id, material, color_name, color, brand, total_weight, remaining_weight, price)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [req.user.userId, material, color_name, color, brand, total_weight, remaining_weight || total_weight, price || 0],
+        `INSERT INTO filaments (user_id, material, color_name, color, brand, total_weight, remaining_weight, price, supplier_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [req.user.userId, material, color_name, color, brand, total_weight, remaining_weight || total_weight, price || 0, supplier_id || null],
         function (err) {
             if (err) {
                 return res.status(500).json({ error: 'Failed to add filament' });
@@ -538,6 +538,70 @@ app.delete('/api/printers/:id', authenticateToken, (req, res) => {
         if (err) return res.status(500).json({ error: 'Failed to delete printer' });
         res.json({ message: 'Printer deleted' });
     });
+});
+
+// Supplier Routes
+app.get('/api/suppliers', authenticateToken, (req, res) => {
+    db.all('SELECT * FROM suppliers WHERE user_id = ? ORDER BY name', [req.user.userId], (err, rows) => {
+        if (err) return res.status(500).json({ error: 'Failed to fetch suppliers' });
+        res.json(rows);
+    });
+});
+
+app.post('/api/suppliers', authenticateToken, (req, res) => {
+    const { name, url, notes } = req.body;
+    if (!name) return res.status(400).json({ error: 'Supplier name required' });
+
+    db.run('INSERT INTO suppliers (user_id, name, url, notes) VALUES (?, ?, ?, ?)',
+        [req.user.userId, name, url || '', notes || ''],
+        function (err) {
+            if (err) return res.status(500).json({ error: 'Failed to add supplier' });
+            db.get('SELECT * FROM suppliers WHERE id = ?', [this.lastID], (err, row) => {
+                res.status(201).json(row);
+            });
+        }
+    );
+});
+
+app.put('/api/suppliers/:id', authenticateToken, (req, res) => {
+    const { name, url, notes } = req.body;
+    db.run('UPDATE suppliers SET name = ?, url = ?, notes = ? WHERE id = ? AND user_id = ?',
+        [name, url, notes, req.params.id, req.user.userId],
+        function (err) {
+            if (err) return res.status(500).json({ error: 'Failed to update supplier' });
+            db.get('SELECT * FROM suppliers WHERE id = ?', [req.params.id], (err, row) => {
+                res.json(row);
+            });
+        }
+    );
+});
+
+app.delete('/api/suppliers/:id', authenticateToken, (req, res) => {
+    db.run('DELETE FROM suppliers WHERE id = ? AND user_id = ?', [req.params.id, req.user.userId], function (err) {
+        if (err) return res.status(500).json({ error: 'Failed to delete supplier' });
+        res.json({ message: 'Supplier deleted' });
+    });
+});
+
+// Push Subscription Routes
+app.post('/api/push/subscribe', authenticateToken, (req, res) => {
+    const subscription = JSON.stringify(req.body.subscription);
+    db.run('UPDATE users SET push_subscription = ? WHERE id = ?', [subscription, req.user.userId], function (err) {
+        if (err) return res.status(500).json({ error: 'Failed to save subscription' });
+        res.json({ success: true });
+    });
+});
+
+app.post('/api/push/unsubscribe', authenticateToken, (req, res) => {
+    db.run('UPDATE users SET push_subscription = NULL WHERE id = ?', [req.user.userId], function (err) {
+        if (err) return res.status(500).json({ error: 'Failed to unsubscribe' });
+        res.json({ success: true });
+    });
+});
+
+// VAPID public key endpoint
+app.get('/api/push/vapid-key', (req, res) => {
+    res.json({ publicKey: process.env.VAPID_PUBLIC_KEY || '' });
 });
 
 // Analytics Route

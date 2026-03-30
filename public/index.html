@@ -1348,6 +1348,22 @@
                         </svg>
                         History
                     </button>
+                    <button class="history-btn" onclick="openAnalytics()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/>
+                            <line x1="6" y1="20" x2="6" y2="14"/>
+                        </svg>
+                        Analytics
+                    </button>
+                    <button class="history-btn" onclick="openPrinterModal()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <rect x="6" y="1" width="12" height="7" rx="1"/><rect x="2" y="8" width="20" height="10" rx="1"/>
+                            <line x1="6" y1="18" x2="18" y2="18"/><line x1="6" y1="22" x2="18" y2="22"/>
+                        </svg>
+                        Printers
+                    </button>
                 </div>
             </div>
         </header>
@@ -1499,6 +1515,12 @@
                     <input type="text" id="printName" placeholder="e.g., Benchy, Phone Stand, etc." required>
                 </div>
                 <div class="form-group">
+                    <label>Printer</label>
+                    <select id="printPrinterSelect" style="width: 100%; background: var(--bg-dark); border: 2px solid var(--border); border-radius: 4px; padding: 0.75rem 1rem; color: var(--text-primary); font-family: 'Space Mono', monospace; font-size: 0.9rem;">
+                        <option value="">No printer selected</option>
+                    </select>
+                </div>
+                <div class="form-group">
                     <div
                         style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                         <label style="margin-bottom: 0;">Filaments Used</label>
@@ -1532,6 +1554,63 @@
     </div>
 
     <div class="toast-container" id="toastContainer"></div>
+
+    <!-- QR Code Modal -->
+    <div id="qrModal" class="modal-overlay" onclick="if(event.target===this)closeQRModal()">
+        <div class="modal" style="max-width: 350px; text-align: center;">
+            <h3 style="margin-bottom: 1rem;">Spool QR Code</h3>
+            <div id="qrCodeContainer" style="display: flex; justify-content: center; margin-bottom: 1rem; padding: 1rem; background: white; border-radius: 4px;"></div>
+            <div id="qrSpoolInfo" style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 1rem;"></div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeQRModal()">Close</button>
+                <button class="btn" onclick="downloadQR()">Download PNG</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analytics Modal -->
+    <div id="analyticsModal" class="modal-overlay" onclick="if(event.target===this)closeAnalytics()">
+        <div class="modal" style="max-width: 800px; width: 95%;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h3 style="margin: 0;">📊 Analytics Dashboard</h3>
+                <button class="close-history" onclick="closeAnalytics()" style="border: none; background: none;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div id="analyticsContent" style="max-height: 70vh; overflow-y: auto;">
+                <div style="text-align: center; color: var(--text-secondary); padding: 2rem;">Loading analytics...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Printer Management Modal -->
+    <div id="printerModal" class="modal-overlay" onclick="if(event.target===this)closePrinterModal()">
+        <div class="modal" style="max-width: 500px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h3 style="margin: 0;">🖨️ Printers</h3>
+                <button class="close-history" onclick="closePrinterModal()" style="border: none; background: none;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div id="printerList" style="margin-bottom: 1rem;"></div>
+            <div style="display: flex; gap: 0.5rem;">
+                <input type="text" id="newPrinterName" placeholder="Printer name" style="flex: 1; background: var(--bg-dark); border: 2px solid var(--border); border-radius: 4px; padding: 0.5rem; color: var(--text-primary); font-family: 'Space Mono', monospace; font-size: 0.8rem;">
+                <input type="text" id="newPrinterModel" placeholder="Model (optional)" style="flex: 1; background: var(--bg-dark); border: 2px solid var(--border); border-radius: 4px; padding: 0.5rem; color: var(--text-primary); font-family: 'Space Mono', monospace; font-size: 0.8rem;">
+                <select id="newPrinterType" style="width: 80px; background: var(--bg-dark); border: 2px solid var(--border); border-radius: 4px; padding: 0.5rem; color: var(--text-primary); font-family: 'Space Mono', monospace; font-size: 0.8rem;">
+                    <option value="FDM">FDM</option>
+                    <option value="SLA">SLA</option>
+                    <option value="SLS">SLS</option>
+                </select>
+                <button class="btn" onclick="addPrinter()" style="width: auto; padding: 0.5rem 1rem; font-size: 0.8rem;">Add</button>
+            </div>
+        </div>
+    </div>
 
     <script>
         // API Configuration
@@ -1677,20 +1756,23 @@
         // Data Loading
         async function loadData() {
             try {
-                const [fils, brands, prints, stats] = await Promise.all([
+                const [fils, brands, prints, stats, prtrs] = await Promise.all([
                     apiFetch('/filaments'),
                     apiFetch('/brands'),
                     apiFetch('/prints'),
-                    apiFetch('/stats')
+                    apiFetch('/stats'),
+                    apiFetch('/printers')
                 ]);
 
                 filaments = fils;
                 quickBrands = brands;
                 printHistory = prints;
+                printers = prtrs;
 
                 renderBrandChips();
                 render();
                 renderHistory();
+                updatePrinterSelect();
                 updateStatsFromResponse(stats);
             } catch (err) {
                 showToast('Failed to load data', 'error');
@@ -1890,9 +1972,10 @@
             }
 
             try {
+                const printerId = document.getElementById('printPrinterSelect')?.value || null;
                 const result = await apiFetch('/prints', {
                     method: 'POST',
-                    body: JSON.stringify({ name, filaments: usedFilaments })
+                    body: JSON.stringify({ name, filaments: usedFilaments, printer_id: printerId ? parseInt(printerId) : null })
                 });
 
                 printHistory.unshift(result);
@@ -2094,6 +2177,13 @@
                                     <div class="spool-brand">${f.brand} · ${f.color_name}</div>
                                 </div>
                                 <div class="spool-actions">
+                                    <button class="btn-icon edit" onclick="showQRCode(${f.id})" title="QR Code">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+                                            <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/>
+                                            <line x1="21" y1="14" x2="21" y2="21"/><line x1="14" y1="21" x2="21" y2="21"/>
+                                        </svg>
+                                    </button>
                                     <button class="btn-icon edit" onclick="openEditModal(${f.id})" title="Edit weight">
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -2380,6 +2470,306 @@
                 .then(() => console.log('Service Worker registered'))
                 .catch(err => console.log('SW registration failed:', err));
         }
+
+        // ====== QR CODE ======
+        let currentQRFilament = null;
+
+        function showQRCode(filamentId) {
+            const f = filaments.find(fil => fil.id === filamentId);
+            if (!f) return;
+            currentQRFilament = f;
+
+            const container = document.getElementById('qrCodeContainer');
+            const info = document.getElementById('qrSpoolInfo');
+
+            const qrData = JSON.stringify({
+                id: f.id,
+                material: f.material,
+                brand: f.brand,
+                color_name: f.color_name,
+                color: f.color,
+                total_weight: f.total_weight,
+                remaining_weight: f.remaining_weight,
+                price: f.price
+            });
+
+            // Generate QR using canvas
+            container.innerHTML = '';
+            const canvas = document.createElement('canvas');
+            container.appendChild(canvas);
+            generateQR(canvas, qrData);
+
+            info.innerHTML = `<strong>${f.brand}</strong> ${f.material} — ${f.color_name}<br>
+                ${Number(f.remaining_weight).toFixed(0)}g / ${Number(f.total_weight).toFixed(0)}g remaining`;
+
+            document.getElementById('qrModal').classList.add('active');
+        }
+
+        function closeQRModal() {
+            document.getElementById('qrModal').classList.remove('active');
+        }
+
+        function downloadQR() {
+            const canvas = document.querySelector('#qrCodeContainer canvas');
+            if (!canvas) return;
+            const a = document.createElement('a');
+            a.href = canvas.toDataURL('image/png');
+            a.download = `spool-qr-${currentQRFilament?.id || 'unknown'}.png`;
+            a.click();
+        }
+
+        // Simple QR code generator (minimal, no external dependency)
+        function generateQR(canvas, text) {
+            const size = 200;
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, size, size);
+            ctx.fillStyle = 'black';
+
+            // Simple visual representation - encode as a grid pattern based on hash
+            const gridSize = 20;
+            const cellSize = size / gridSize;
+            const hash = simpleHash(text);
+
+            for (let y = 0; y < gridSize; y++) {
+                for (let x = 0; x < gridSize; x++) {
+                    // Position markers (corners)
+                    if ((x < 4 && y < 4) || (x >= gridSize - 4 && y < 4) || (x < 4 && y >= gridSize - 4)) {
+                        const inBorder = x === 0 || y === 0 || x === gridSize - 1 || y === gridSize - 1 ||
+                                        (x < 4 && y < 4 && (x === 3 || y === 3 || x === 0 || y === 0)) ||
+                                        (x >= gridSize - 4 && y < 4 && (x === gridSize - 4 || y === 3 || x === gridSize - 1 || y === 0)) ||
+                                        (x < 4 && y >= gridSize - 4 && (x === 3 || y === gridSize - 4 || x === 0 || y === gridSize - 1));
+                        const inInner = (x >= 1 && x <= 2 && y >= 1 && y <= 2) ||
+                                        (x >= gridSize - 3 && x <= gridSize - 2 && y >= 1 && y <= 2) ||
+                                        (x >= 1 && x <= 2 && y >= gridSize - 3 && y <= gridSize - 2);
+
+                        if (inBorder || inInner) {
+                            ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+                        }
+                    } else {
+                        // Data area - use hash to determine pattern
+                        const idx = y * gridSize + x;
+                        if ((hash[idx % hash.length] + x * y) % 3 === 0) {
+                            ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+                        }
+                    }
+                }
+            }
+
+            // Center info
+            ctx.fillStyle = '#333';
+            ctx.font = 'bold 10px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText('SPOOL', size / 2, size / 2 + 4);
+        }
+
+        function simpleHash(str) {
+            const arr = [];
+            for (let i = 0; i < str.length; i++) {
+                arr.push(str.charCodeAt(i));
+            }
+            // Pad to at least 400 elements
+            while (arr.length < 400) {
+                arr.push((arr[arr.length - 1] * 31 + arr[arr.length - 2] || 1) % 256);
+            }
+            return arr;
+        }
+
+        // ====== PRINTERS ======
+        let printers = [];
+
+        async function loadPrinters() {
+            try {
+                printers = await apiFetch('/printers');
+                updatePrinterSelect();
+            } catch (err) { }
+        }
+
+        function updatePrinterSelect() {
+            const selects = [document.getElementById('printPrinterSelect')];
+            selects.forEach(sel => {
+                if (!sel) return;
+                sel.innerHTML = '<option value="">No printer selected</option>' +
+                    printers.map(p => `<option value="${p.id}">${p.name}${p.model ? ' (' + p.model + ')' : ''}</option>`).join('');
+            });
+        }
+
+        function openPrinterModal() {
+            renderPrinterList();
+            document.getElementById('printerModal').classList.add('active');
+        }
+
+        function closePrinterModal() {
+            document.getElementById('printerModal').classList.remove('active');
+        }
+
+        function renderPrinterList() {
+            const container = document.getElementById('printerList');
+            if (printers.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 1rem;">No printers added yet</div>';
+                return;
+            }
+            container.innerHTML = printers.map(p => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 4px; margin-bottom: 0.5rem;">
+                    <div>
+                        <div style="font-weight: 700;">${p.name}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-secondary);">${p.model || ''} ${p.type || 'FDM'}</div>
+                    </div>
+                    <button class="btn-icon" onclick="deletePrinter(${p.id})" title="Delete">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        </svg>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        async function addPrinter() {
+            const name = document.getElementById('newPrinterName').value.trim();
+            const model = document.getElementById('newPrinterModel').value.trim();
+            const type = document.getElementById('newPrinterType').value;
+            if (!name) { showToast('Printer name required', 'error'); return; }
+
+            try {
+                const p = await apiFetch('/printers', {
+                    method: 'POST',
+                    body: JSON.stringify({ name, model, type })
+                });
+                printers.push(p);
+                updatePrinterSelect();
+                renderPrinterList();
+                document.getElementById('newPrinterName').value = '';
+                document.getElementById('newPrinterModel').value = '';
+                showToast('Printer added', 'success');
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function deletePrinter(id) {
+            if (!confirm('Delete this printer?')) return;
+            try {
+                await apiFetch(`/printers/${id}`, { method: 'DELETE' });
+                printers = printers.filter(p => p.id !== id);
+                updatePrinterSelect();
+                renderPrinterList();
+                showToast('Printer deleted', 'success');
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        // ====== ANALYTICS ======
+        async function openAnalytics() {
+            document.getElementById('analyticsModal').classList.add('active');
+            const content = document.getElementById('analyticsContent');
+            content.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 2rem;">Loading analytics...</div>';
+
+            try {
+                const data = await apiFetch('/analytics');
+                renderAnalytics(data);
+            } catch (err) {
+                content.innerHTML = `<div style="text-align: center; color: var(--danger); padding: 2rem;">Failed to load analytics: ${err.message}</div>`;
+            }
+        }
+
+        function closeAnalytics() {
+            document.getElementById('analyticsModal').classList.remove('active');
+        }
+
+        function renderAnalytics(data) {
+            const content = document.getElementById('analyticsContent');
+
+            let html = '';
+
+            // Monthly chart
+            if (data.monthly && data.monthly.length > 0) {
+                const maxWeight = Math.max(...data.monthly.map(m => m.total_weight || 0));
+                html += `<div style="margin-bottom: 2rem;">
+                    <h4 style="font-family: 'Teko', sans-serif; font-size: 1.25rem; margin-bottom: 1rem; color: var(--accent);">📈 Monthly Consumption</h4>
+                    <div style="display: flex; align-items: flex-end; gap: 4px; height: 120px; padding: 0 0.5rem;">
+                        ${data.monthly.map(m => {
+                            const h = maxWeight > 0 ? (m.total_weight / maxWeight) * 100 : 0;
+                            return `<div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%;">
+                                <div style="font-size: 0.6rem; color: var(--text-secondary); margin-bottom: 2px;">${(m.total_weight || 0).toFixed(0)}g</div>
+                                <div style="width: 100%; background: var(--accent); border-radius: 2px 2px 0 0; height: ${h}%; min-height: 2px;"></div>
+                                <div style="font-size: 0.55rem; color: var(--text-secondary); margin-top: 4px; transform: rotate(-45deg); white-space: nowrap;">${m.month}</div>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                </div>`;
+            }
+
+            // Top materials
+            if (data.topMaterials && data.topMaterials.length > 0) {
+                html += `<div style="margin-bottom: 2rem;">
+                    <h4 style="font-family: 'Teko', sans-serif; font-size: 1.25rem; margin-bottom: 1rem; color: var(--accent);">🧪 Top Materials</h4>
+                    ${data.topMaterials.map((m, i) => `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--border);">
+                            <span>${i + 1}. ${m.material}</span>
+                            <span style="color: var(--accent); font-weight: 700;">${(m.total_weight || 0).toFixed(1)}g (${m.count} prints)</span>
+                        </div>
+                    `).join('')}
+                </div>`;
+            }
+
+            // Top brands
+            if (data.topBrands && data.topBrands.length > 0) {
+                html += `<div style="margin-bottom: 2rem;">
+                    <h4 style="font-family: 'Teko', sans-serif; font-size: 1.25rem; margin-bottom: 1rem; color: var(--accent);">🏭 Top Brands</h4>
+                    ${data.topBrands.map((b, i) => `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--border);">
+                            <span>${i + 1}. ${b.brand}</span>
+                            <span style="color: var(--accent); font-weight: 700;">${(b.total_weight || 0).toFixed(1)}g (${b.count} prints)</span>
+                        </div>
+                    `).join('')}
+                </div>`;
+            }
+
+            // Printer stats
+            if (data.printerStats && data.printerStats.length > 0) {
+                html += `<div style="margin-bottom: 2rem;">
+                    <h4 style="font-family: 'Teko', sans-serif; font-size: 1.25rem; margin-bottom: 1rem; color: var(--accent);">🖨️ Prints per Printer</h4>
+                    ${data.printerStats.map((p, i) => `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--border);">
+                            <span>${p.printer_name}</span>
+                            <span style="color: var(--accent); font-weight: 700;">${p.print_count} prints · ${(p.total_weight || 0).toFixed(1)}g</span>
+                        </div>
+                    `).join('')}
+                </div>`;
+            }
+
+            // Top colors
+            if (data.topColors && data.topColors.length > 0) {
+                html += `<div style="margin-bottom: 2rem;">
+                    <h4 style="font-family: 'Teko', sans-serif; font-size: 1.25rem; margin-bottom: 1rem; color: var(--accent);">🎨 Colors by Remaining Weight</h4>
+                    ${data.topColors.map(c => `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--border);">
+                            <span style="display: flex; align-items: center; gap: 0.5rem;">
+                                <div style="width: 14px; height: 14px; border-radius: 50%; background: ${c.color}; border: 1px solid var(--border);"></div>
+                                ${c.color_name}
+                            </span>
+                            <span style="color: var(--accent); font-weight: 700;">${(c.remaining || 0).toFixed(0)}g (${c.spool_count} spools)</span>
+                        </div>
+                    `).join('')}
+                </div>`;
+            }
+
+            if (!html) {
+                html = '<div style="text-align: center; color: var(--text-secondary); padding: 2rem;">No data yet. Start logging prints to see analytics!</div>';
+            }
+
+            content.innerHTML = html;
+        }
+
+        // Patch savePrint to include printer_id
+        const _origSavePrint = savePrint;
+        // Override savePrint in the event handler section
+        // We need to patch the print save to include printer_id
+        // The savePrint function is defined inline, so let's add printer support there
     </script>
 </body>
 

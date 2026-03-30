@@ -133,6 +133,40 @@ const initDatabase = async () => {
         });
     });
 
+    // Create printers table
+    await new Promise((resolve, reject) => {
+        db.run(`
+            CREATE TABLE IF NOT EXISTS printers (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                name TEXT NOT NULL,
+                model TEXT,
+                type TEXT DEFAULT 'FDM',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        `, (err) => {
+            if (err) reject(err);
+            else resolve();
+        });
+    });
+
+    // Add printer_id to print_history if it doesn't exist
+    await new Promise((resolve) => {
+        db.run('ALTER TABLE print_history ADD COLUMN printer_id INTEGER REFERENCES printers(id) ON DELETE SET NULL', (err) => {
+            if (err) {
+                if (err.message.includes('duplicate column name')) {
+                    console.log('printer_id column already exists.');
+                } else {
+                    console.error('Migration error (printer_id):', err.message);
+                }
+            } else {
+                console.log('Added printer_id column to print_history.');
+            }
+            resolve();
+        });
+    });
+
     // Insert default brands for demo user (if we create one)
     console.log('Database initialized successfully!');
     db.close();

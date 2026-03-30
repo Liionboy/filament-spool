@@ -326,7 +326,7 @@ app.get('/api/prints', authenticateToken, (req, res) => {
 });
 
 app.post('/api/prints', authenticateToken, async (req, res) => {
-    const { name, filaments: usedFilaments } = req.body;
+    const { name, filaments: usedFilaments, printer_id } = req.body;
 
     if (!name || !usedFilaments || !Array.isArray(usedFilaments) || usedFilaments.length === 0) {
         return res.status(400).json({ error: 'Missing required fields or invalid filaments data' });
@@ -390,9 +390,9 @@ app.post('/api/prints', authenticateToken, async (req, res) => {
                 const main = processedFilaments[0];
 
                 db.run(
-                    `INSERT INTO print_history (user_id, name, filament_id, material, brand, color_name, color, weight_used, cost)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                    [req.user.userId, name, main.filament_id, main.material, main.brand, main.color_name, main.color, totalWeight, totalCost],
+                    `INSERT INTO print_history (user_id, name, filament_id, material, brand, color_name, color, weight_used, cost, printer_id)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [req.user.userId, name, main.filament_id, main.material, main.brand, main.color_name, main.color, totalWeight, totalCost, printer_id || null],
                     function (err) {
                         if (err) {
                             db.run('ROLLBACK');
@@ -508,6 +508,89 @@ app.get('/api/stats', authenticateToken, (req, res) => {
             });
         }
     );
+});
+
+// Printer Routes
+app.get('/api/printers', authenticateToken, (req, res) => {
+    db.all('SELECT * FROM printers WHERE user_id = ? ORDER BY name', [req.user.userId], (err, rows) => {
+        if (err) return res.status(500).json({ error: 'Failed to fetch printers' });
+        res.json(rows);
+    });
+});
+
+app.post('/api/printers', authenticateToken, (req, res) => {
+    const { name, model, type } = req.body;
+    if (!name) return res.status(400).json({ error: 'Printer name required' });
+
+    db.run('INSERT INTO printers (user_id, name, model, type) VALUES (?, ?, ?, ?)',
+        [req.user.userId, name, model || '', type || 'FDM'],
+        function (err) {
+            if (err) return res.status(500).json({ error: 'Failed to add printer' });
+            db.get('SELECT * FROM printers WHERE id = ?', [this.lastID], (err, row) => {
+                res.status(201).json(row);
+            });
+        }
+    );
+});
+
+app.delete('/api/printers/:id', authenticateToken, (req, res) => {
+    db.run('DELETE FROM printers WHERE id = ? AND user_id = ?', [req.params.id, req.user.userId], function (err) {
+        if (err) return res.status(500).json({ error: 'Failed to delete printer' });
+        res.json({ message: 'Printer deleted' });
+    });
+});
+
+// Analytics Route
+app.get('/api/analytics', authenticateToken, (req, res) => {
+    const userId = req.user.userId;
+    const results = {};
+
+    db.serialize(() => {
+        // Monthly consumption (last 12 months)
+        db.all(`SELECT strftime('%Y-%m', created_at) as month, 
+                        SUM(weight_used) as total_weight, 
+                        SUM(cost) as total_cost,
+                        COUNT(*) as print_count
+                 FROM print_history 
+                 WHERE user_id = ? AND created_at >= date('now', '-12 months')
+                 GROUP BY month ORDER BY month`, [userId], (err, monthly) => {
+            results.monthly = monthly || [];
+
+            // Top materials
+            db.all(`SELECT material, COUNT(*) as count, SUM(weight_used) as total_weight
+                     FROM print_history WHERE user_id = ?
+                     GROUP BY material ORDER BY total_weight DESC LIMIT 10`, [userId], (err, materials) => {
+                results.topMaterials = materials || [];
+
+                // Top brands
+                db.all(`SELECT brand, COUNT(*) as count, SUM(weight_used) as total_weight
+                         FROM print_history WHERE user_id = ?
+                         GROUP BY brand ORDER BY total_weight DESC LIMIT 10`, [userId], (err, brands) => {
+                    results.topBrands = brands || [];
+
+                    // Prints per printer
+                    db.all(`SELECT p.name as printer_name, COUNT(ph.id) as print_count, 
+                                   SUM(ph.weight_used) as total_weight
+                             FROM print_history ph
+                             LEFT JOIN printers p ON ph.printer_id = p.id
+                             WHERE ph.user_id = ? AND ph.printer_id IS NOT NULL
+                             GROUP BY ph.printer_id ORDER BY print_count DESC`, [userId], (err, printers) => {
+                        results.printerStats = printers || [];
+
+                        // Filament by color
+                        db.all(`SELECT color_name, color, SUM(remaining_weight) as remaining, 
+                                        COUNT(*) as spool_count
+                                 FROM filaments WHERE user_id = ?
+                                 GROUP BY color ORDER BY remaining DESC LIMIT 10`, [userId], (err, colors) => {
+                            results.topColors = colors || [];
+
+                            res.json(results);
+                        });
+                    });
+                });
+            });
+        });
+    });
 });
 
 // Health check

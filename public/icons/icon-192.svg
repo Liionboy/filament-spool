@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <rect width="192" height="192" rx="24" fill="#0d0d0d"/>
+  <circle cx="96" cy="96" r="70" fill="none" stroke="#ff6b35" stroke-width="8"/>
+  <circle cx="96" cy="96" r="42" fill="none" stroke="#ff6b35" stroke-width="5"/>
+  <circle cx="96" cy="96" r="16" fill="#ff6b35"/>
+  <text x="96" y="165" text-anchor="middle" font-family="monospace" font-weight="bold" font-size="22" fill="#e8e8e8">SPOOL</text>
+</svg>

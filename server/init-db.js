@@ -151,6 +151,56 @@ const initDatabase = async () => {
         });
     });
 
+    // Create suppliers table
+    await new Promise((resolve, reject) => {
+        db.run(`
+            CREATE TABLE IF NOT EXISTS suppliers (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                name TEXT NOT NULL,
+                url TEXT,
+                notes TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        `, (err) => {
+            if (err) reject(err);
+            else resolve();
+        });
+    });
+
+    // Add supplier_id to filaments if it doesn't exist
+    await new Promise((resolve) => {
+        db.run('ALTER TABLE filaments ADD COLUMN supplier_id INTEGER REFERENCES suppliers(id) ON DELETE SET NULL', (err) => {
+            if (err) {
+                if (err.message.includes('duplicate column name')) {
+                    console.log('supplier_id column already exists.');
+                } else {
+                    console.error('Migration error (supplier_id):', err.message);
+                }
+            } else {
+                console.log('Added supplier_id column to filaments.');
+            }
+            resolve();
+        });
+    });
+
+    // Add push_subscription to users if it doesn't exist
+    await new Promise((resolve) => {
+        db.run('ALTER TABLE users ADD COLUMN push_subscription TEXT', (err) => {
+            if (err) {
+                if (err.message.includes('duplicate column name')) {
+                    console.log('push_subscription column already exists.');
+                } else {
+                    console.error('Migration error (push_subscription):', err.message);
+                }
+            } else {
+                console.log('Added push_subscription column to users.');
+            }
+            resolve();
+        });
+    });
+
     // Add printer_id to print_history if it doesn't exist
     await new Promise((resolve) => {
         db.run('ALTER TABLE print_history ADD COLUMN printer_id INTEGER REFERENCES printers(id) ON DELETE SET NULL', (err) => {

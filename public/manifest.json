@@ -1,0 +1,21 @@
+{
+  "name": "SPOOL - Filament Inventory",
+  "short_name": "SPOOL",
+  "description": "Track your 3D printing filament inventory",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0d0d0d",
+  "theme_color": "#ff6b35",
+  "icons": [
+    {
+      "src": "/icons/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/icons/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}

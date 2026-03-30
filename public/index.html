@@ -9,6 +9,9 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Teko:wght@400;600;700&display=swap"
         rel="stylesheet">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#ff6b35">
+    <link rel="apple-touch-icon" href="/icons/icon-192.svg">
     <style>
         :root {
             --bg-dark: #0d0d0d;
@@ -21,6 +24,15 @@
             --success: #00d084;
             --danger: #ff3366;
             --warning: #ffc107;
+        }
+
+        [data-theme="light"] {
+            --bg-dark: #f0f0f0;
+            --bg-panel: #ffffff;
+            --bg-card: #e8e8e8;
+            --border: #ccc;
+            --text-primary: #1a1a1a;
+            --text-secondary: #666;
         }
 
         * {
@@ -38,6 +50,12 @@
                 radial-gradient(circle at 20% 80%, rgba(255, 107, 53, 0.03) 0%, transparent 50%),
                 radial-gradient(circle at 80% 20%, rgba(0, 208, 132, 0.03) 0%, transparent 50%),
                 repeating-linear-gradient(90deg, transparent, transparent 50px, rgba(255, 255, 255, 0.01) 50px, rgba(255, 255, 255, 0.01) 51px);
+        }
+
+        [data-theme="light"] body {
+            background-image:
+                radial-gradient(circle at 20% 80%, rgba(255, 107, 53, 0.06) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(0, 208, 132, 0.06) 0%, transparent 50%);
         }
 
         /* Header */
@@ -1284,6 +1302,28 @@
                     </div>
                 </div>
                 <div class="header-actions">
+                    <button class="history-btn" onclick="toggleTheme()" id="themeToggle" title="Toggle theme">
+                        <svg id="themeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                        </svg>
+                    </button>
+                    <button class="history-btn" onclick="exportCSV()" title="Export CSV">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7 10 12 15 17 10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                        Export
+                    </button>
+                    <button class="history-btn" onclick="document.getElementById('importCSVInput').click()" title="Import CSV">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                        Import
+                    </button>
+                    <input type="file" id="importCSVInput" accept=".csv" style="display:none" onchange="importCSV(event)">
                     <button class="history-btn" onclick="openSettingsModal()" title="Settings">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2">
@@ -2192,6 +2232,154 @@
                 closePrintModal();
             }
         });
+
+        // ====== THEME TOGGLE ======
+        (function initTheme() {
+            const saved = localStorage.getItem('filament-theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', saved);
+        })();
+
+        function toggleTheme() {
+            const current = document.documentElement.getAttribute('data-theme') || 'dark';
+            const next = current === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next);
+            localStorage.setItem('filament-theme', next);
+            updateThemeIcon(next);
+        }
+
+        function updateThemeIcon(theme) {
+            const icon = document.getElementById('themeIcon');
+            if (theme === 'light') {
+                icon.innerHTML = '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
+            } else {
+                icon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+            }
+        }
+
+        // Init theme icon on load
+        updateThemeIcon(localStorage.getItem('filament-theme') || 'dark');
+
+        // ====== EXPORT CSV ======
+        function exportCSV() {
+            if (filaments.length === 0) {
+                showToast('No filaments to export', 'warning');
+                return;
+            }
+
+            const headers = ['id','material','color_name','color','brand','total_weight','remaining_weight','price','created_at'];
+            const rows = filaments.map(f => headers.map(h => {
+                let val = f[h] != null ? String(f[h]) : '';
+                if (val.includes(',') || val.includes('"') || val.includes('\n')) {
+                    val = '"' + val.replace(/"/g, '""') + '"';
+                }
+                return val;
+            }).join(','));
+
+            const csv = [headers.join(','), ...rows].join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const date = new Date().toISOString().slice(0, 10);
+            a.href = url;
+            a.download = `filament-spool-export-${date}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast(`Exported ${filaments.length} filaments`, 'success');
+        }
+
+        // ====== IMPORT CSV ======
+        async function importCSV(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const text = await file.text();
+            const lines = text.split('\n').filter(l => l.trim());
+            if (lines.length < 2) {
+                showToast('CSV is empty or has no data rows', 'error');
+                event.target.value = '';
+                return;
+            }
+
+            const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+            let imported = 0;
+            let failed = 0;
+
+            for (let i = 1; i < lines.length; i++) {
+                const values = parseCSVLine(lines[i]);
+                if (values.length < 5) { failed++; continue; }
+
+                const obj = {};
+                headers.forEach((h, idx) => { obj[h] = values[idx] || ''; });
+
+                const filament = {
+                    material: obj.material,
+                    color_name: obj.color_name,
+                    color: obj.color,
+                    brand: obj.brand,
+                    total_weight: parseFloat(obj.total_weight) || 0,
+                    remaining_weight: parseFloat(obj.remaining_weight) || 0,
+                    price: parseFloat(obj.price) || 0
+                };
+
+                if (!filament.material || !filament.color_name || !filament.color || !filament.brand || !filament.total_weight) {
+                    failed++;
+                    continue;
+                }
+
+                try {
+                    const newFil = await apiFetch('/filaments', {
+                        method: 'POST',
+                        body: JSON.stringify(filament)
+                    });
+                    filaments.unshift(newFil);
+                    imported++;
+                } catch (err) {
+                    failed++;
+                }
+            }
+
+            render();
+            loadStats();
+            const msg = `Imported ${imported} filaments` + (failed ? `, ${failed} skipped` : '');
+            showToast(msg, imported > 0 ? 'success' : 'warning');
+            event.target.value = '';
+        }
+
+        function parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+
+            for (let i = 0; i < line.length; i++) {
+                const ch = line[i];
+                if (inQuotes) {
+                    if (ch === '"' && line[i + 1] === '"') {
+                        current += '"';
+                        i++;
+                    } else if (ch === '"') {
+                        inQuotes = false;
+                    } else {
+                        current += ch;
+                    }
+                } else if (ch === '"') {
+                    inQuotes = true;
+                } else if (ch === ',') {
+                    result.push(current.trim());
+                    current = '';
+                } else {
+                    current += ch;
+                }
+            }
+            result.push(current.trim());
+            return result;
+        }
+
+        // ====== SERVICE WORKER ======
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/service-worker.js')
+                .then(() => console.log('Service Worker registered'))
+                .catch(err => console.log('SW registration failed:', err));
+        }
     </script>
 </body>
 

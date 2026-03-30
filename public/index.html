@@ -12,6 +12,7 @@
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#ff6b35">
     <link rel="apple-touch-icon" href="/icons/icon-192.svg">
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
     <style>
         :root {
             --bg-dark: #0d0d0d;
@@ -2482,22 +2483,39 @@
             const container = document.getElementById('qrCodeContainer');
             const info = document.getElementById('qrSpoolInfo');
 
-            const qrData = JSON.stringify({
-                id: f.id,
-                material: f.material,
-                brand: f.brand,
-                color_name: f.color_name,
-                color: f.color,
-                total_weight: f.total_weight,
-                remaining_weight: f.remaining_weight,
-                price: f.price
-            });
+            // Compact QR data: SPOOL|id|material|brand|color|remaining/total|price
+            const qrData = `SPOOL|${f.id}|${f.material}|${f.brand}|${f.color_name}|${Number(f.remaining_weight).toFixed(0)}/${Number(f.total_weight).toFixed(0)}g|€${(f.price||0).toFixed(2)}`;
 
-            // Generate QR using canvas
+            // Generate real QR code
             container.innerHTML = '';
-            const canvas = document.createElement('canvas');
-            container.appendChild(canvas);
-            generateQR(canvas, qrData);
+            try {
+                const qr = qrcode(0, 'M');
+                qr.addData(qrData);
+                qr.make();
+
+                const size = 220;
+                const canvas = document.createElement('canvas');
+                canvas.width = size;
+                canvas.height = size;
+                const ctx = canvas.getContext('2d');
+                const moduleCount = qr.getModuleCount();
+                const cellSize = size / moduleCount;
+
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, size, size);
+                ctx.fillStyle = 'black';
+
+                for (let row = 0; row < moduleCount; row++) {
+                    for (let col = 0; col < moduleCount; col++) {
+                        if (qr.isDark(row, col)) {
+                            ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
+                        }
+                    }
+                }
+                container.appendChild(canvas);
+            } catch (e) {
+                container.innerHTML = '<div style="color: var(--danger); padding: 1rem;">QR generation failed</div>';
+            }
 
             info.innerHTML = `<strong>${f.brand}</strong> ${f.material} — ${f.color_name}<br>
                 ${Number(f.remaining_weight).toFixed(0)}g / ${Number(f.total_weight).toFixed(0)}g remaining`;
@@ -2516,65 +2534,6 @@
             a.href = canvas.toDataURL('image/png');
             a.download = `spool-qr-${currentQRFilament?.id || 'unknown'}.png`;
             a.click();
-        }
-
-        // Simple QR code generator (minimal, no external dependency)
-        function generateQR(canvas, text) {
-            const size = 200;
-            canvas.width = size;
-            canvas.height = size;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, size, size);
-            ctx.fillStyle = 'black';
-
-            // Simple visual representation - encode as a grid pattern based on hash
-            const gridSize = 20;
-            const cellSize = size / gridSize;
-            const hash = simpleHash(text);
-
-            for (let y = 0; y < gridSize; y++) {
-                for (let x = 0; x < gridSize; x++) {
-                    // Position markers (corners)
-                    if ((x < 4 && y < 4) || (x >= gridSize - 4 && y < 4) || (x < 4 && y >= gridSize - 4)) {
-                        const inBorder = x === 0 || y === 0 || x === gridSize - 1 || y === gridSize - 1 ||
-                                        (x < 4 && y < 4 && (x === 3 || y === 3 || x === 0 || y === 0)) ||
-                                        (x >= gridSize - 4 && y < 4 && (x === gridSize - 4 || y === 3 || x === gridSize - 1 || y === 0)) ||
-                                        (x < 4 && y >= gridSize - 4 && (x === 3 || y === gridSize - 4 || x === 0 || y === gridSize - 1));
-                        const inInner = (x >= 1 && x <= 2 && y >= 1 && y <= 2) ||
-                                        (x >= gridSize - 3 && x <= gridSize - 2 && y >= 1 && y <= 2) ||
-                                        (x >= 1 && x <= 2 && y >= gridSize - 3 && y <= gridSize - 2);
-
-                        if (inBorder || inInner) {
-                            ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
-                        }
-                    } else {
-                        // Data area - use hash to determine pattern
-                        const idx = y * gridSize + x;
-                        if ((hash[idx % hash.length] + x * y) % 3 === 0) {
-                            ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
-                        }
-                    }
-                }
-            }
-
-            // Center info
-            ctx.fillStyle = '#333';
-            ctx.font = 'bold 10px monospace';
-            ctx.textAlign = 'center';
-            ctx.fillText('SPOOL', size / 2, size / 2 + 4);
-        }
-
-        function simpleHash(str) {
-            const arr = [];
-            for (let i = 0; i < str.length; i++) {
-                arr.push(str.charCodeAt(i));
-            }
-            // Pad to at least 400 elements
-            while (arr.length < 400) {
-                arr.push((arr[arr.length - 1] * 31 + arr[arr.length - 2] || 1) % 256);
-            }
-            return arr;
         }
 
         // ====== PRINTERS ======
@@ -2764,12 +2723,6 @@
 
             content.innerHTML = html;
         }
-
-        // Patch savePrint to include printer_id
-        const _origSavePrint = savePrint;
-        // Override savePrint in the event handler section
-        // We need to patch the print save to include printer_id
-        // The savePrint function is defined inline, so let's add printer support there
     </script>
 </body>
 

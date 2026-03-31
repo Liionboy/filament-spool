@@ -1058,6 +1058,7 @@
             z-index: 99;
             overflow-y: auto;
             overflow-x: hidden;
+            transition: transform 0.3s ease;
         }
 
         .sidebar-nav::-webkit-scrollbar {
@@ -1103,6 +1104,189 @@
             text-overflow: ellipsis;
         }
 
+        /* Hamburger Menu */
+        .hamburger {
+            display: none;
+            position: fixed;
+            top: 88px;
+            left: 10px;
+            z-index: 101;
+            width: 40px;
+            height: 40px;
+            background: var(--bg-panel);
+            border: 2px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .hamburger span {
+            display: block;
+            width: 20px;
+            height: 2px;
+            background: var(--text-primary);
+            transition: all 0.3s;
+        }
+
+        .hamburger.active span:nth-child(1) {
+            transform: rotate(45deg) translate(4px, 4px);
+        }
+
+        .hamburger.active span:nth-child(2) {
+            opacity: 0;
+        }
+
+        .hamburger.active span:nth-child(3) {
+            transform: rotate(-45deg) translate(4px, -4px);
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 98;
+        }
+
+        .sidebar-overlay.active {
+            display: block;
+        }
+
+        /* Search Bar */
+        .search-bar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .search-input {
+            flex: 1;
+            min-width: 200px;
+            background: var(--bg-panel);
+            border: 2px solid var(--border);
+            border-radius: 4px;
+            padding: 0.75rem 1rem;
+            color: var(--text-primary);
+            font-family: 'Space Mono', monospace;
+            font-size: 0.85rem;
+            transition: border-color 0.2s;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .search-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .brand-filter {
+            background: var(--bg-panel);
+            border: 2px solid var(--border);
+            border-radius: 4px;
+            padding: 0.75rem 1rem;
+            color: var(--text-primary);
+            font-family: 'Space Mono', monospace;
+            font-size: 0.85rem;
+            cursor: pointer;
+            min-width: 140px;
+        }
+
+        .brand-filter:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .sort-select {
+            background: var(--bg-panel);
+            border: 2px solid var(--border);
+            border-radius: 4px;
+            padding: 0.75rem 1rem;
+            color: var(--text-primary);
+            font-family: 'Space Mono', monospace;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+
+        .sort-select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .search-count {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            width: 100%;
+        }
+
+        /* Monthly Cost Chart */
+        .cost-chart-container {
+            background: var(--bg-card);
+            border-radius: 4px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        .cost-chart-title {
+            font-family: 'Teko', sans-serif;
+            font-size: 1.2rem;
+            color: var(--text-primary);
+            margin-bottom: 0.75rem;
+        }
+
+        .cost-chart {
+            display: flex;
+            align-items: flex-end;
+            gap: 6px;
+            height: 120px;
+            padding-top: 1rem;
+        }
+
+        .cost-bar-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100%;
+            justify-content: flex-end;
+        }
+
+        .cost-bar {
+            width: 100%;
+            max-width: 40px;
+            background: var(--accent);
+            border-radius: 3px 3px 0 0;
+            transition: height 0.5s ease;
+            position: relative;
+            min-height: 2px;
+        }
+
+        .cost-bar:hover {
+            background: var(--success);
+        }
+
+        .cost-bar-label {
+            font-size: 0.6rem;
+            color: var(--text-secondary);
+            margin-top: 4px;
+            text-align: center;
+        }
+
+        .cost-bar-value {
+            font-size: 0.55rem;
+            color: var(--accent);
+            text-align: center;
+        }
+
         /* Cost display on spool card */
         .spool-cost {
             font-size: 0.75rem;
@@ -1144,7 +1328,8 @@
         @media (max-width: 900px) {
             .container {
                 grid-template-columns: 1fr;
-                padding-left: 12rem;
+                padding-left: 1.5rem;
+                padding-top: 4rem;
             }
 
             .stats {
@@ -1156,12 +1341,18 @@
             }
 
             .sidebar-nav {
-                width: 160px;
+                width: 220px;
+                transform: translateX(-100%);
+                top: 0;
+                padding-top: 5rem;
             }
 
-            .sidebar-btn {
-                height: 38px;
-                font-size: 0.7rem;
+            .sidebar-nav.open {
+                transform: translateX(0);
+            }
+
+            .hamburger {
+                display: flex;
             }
 
             .history-panel {
@@ -1172,6 +1363,16 @@
 
             .history-panel.open {
                 right: 0;
+            }
+
+            .search-bar {
+                flex-direction: column;
+            }
+
+            .search-input,
+            .brand-filter,
+            .sort-select {
+                width: 100%;
             }
         }
 
@@ -1375,6 +1576,14 @@
             </div>
         </header>
 
+        <!-- Hamburger Menu -->
+        <button class="hamburger" onclick="toggleSidebar()" id="hamburgerBtn">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
         <!-- Sidebar Navigation -->
         <nav class="sidebar-nav">
             <button class="sidebar-btn" onclick="toggleTheme()" id="themeToggle">
@@ -1561,6 +1770,21 @@
                     <div class="filter-chip" data-filter="OTHER">Other</div>
                 </div>
 
+                <div class="search-bar">
+                    <input type="text" class="search-input" id="searchInput" placeholder="Search material, brand, color..." oninput="render()">
+                    <select class="brand-filter" id="brandFilter" onchange="render()">
+                        <option value="all">All Brands</option>
+                    </select>
+                    <select class="sort-select" id="sortSelect" onchange="render()">
+                        <option value="name">Sort: Name</option>
+                        <option value="weight">Sort: Weight</option>
+                        <option value="price">Sort: Price</option>
+                        <option value="remaining">Sort: Remaining</option>
+                        <option value="date">Sort: Newest</option>
+                    </select>
+                    <div class="search-count" id="searchCount"></div>
+                </div>
+
                 <div class="spool-grid" id="spoolGrid">
                     <div class="empty-state">
                         <svg class="empty-icon" viewBox="0 0 24 24">
@@ -1601,6 +1825,10 @@
             </div>
             <div class="history-content" id="historyContent">
                 <!-- Populated by JS -->
+            </div>
+            <div class="cost-chart-container" id="costChartContainer" style="display:none;">
+                <div class="cost-chart-title">Monthly Print Cost</div>
+                <div class="cost-chart" id="costChart"></div>
             </div>
         </div>
 
@@ -2321,16 +2549,83 @@
 
         // Original Render Helpers (adapted for API names)
         function getFilteredFilaments() {
-            if (currentFilter === 'all') return filaments;
-            if (currentFilter === 'OTHER') {
-                const known = ['PLA', 'PLA+', 'ABS', 'PETG', 'TPU'];
-                return filaments.filter(f => !known.includes(f.material));
+            let result = [...filaments];
+
+            // Material filter
+            if (currentFilter !== 'all') {
+                if (currentFilter === 'OTHER') {
+                    const known = ['PLA', 'PLA+', 'ABS', 'PETG', 'TPU'];
+                    result = result.filter(f => !known.includes(f.material));
+                } else {
+                    result = result.filter(f => f.material === currentFilter);
+                }
             }
-            return filaments.filter(f => f.material === currentFilter);
+
+            // Search filter
+            const searchTerm = document.getElementById('searchInput')?.value?.toLowerCase().trim();
+            if (searchTerm) {
+                result = result.filter(f =>
+                    f.material?.toLowerCase().includes(searchTerm) ||
+                    f.brand?.toLowerCase().includes(searchTerm) ||
+                    f.color_name?.toLowerCase().includes(searchTerm) ||
+                    f.color?.toLowerCase().includes(searchTerm)
+                );
+            }
+
+            // Brand filter
+            const brandVal = document.getElementById('brandFilter')?.value;
+            if (brandVal && brandVal !== 'all') {
+                result = result.filter(f => f.brand === brandVal);
+            }
+
+            // Sort
+            const sortBy = document.getElementById('sortSelect')?.value || 'name';
+            switch (sortBy) {
+                case 'weight':
+                    result.sort((a, b) => (b.remaining_weight || 0) - (a.remaining_weight || 0));
+                    break;
+                case 'price':
+                    result.sort((a, b) => (b.price || 0) - (a.price || 0));
+                    break;
+                case 'remaining':
+                    result.sort((a, b) =>
+                        ((a.remaining_weight / a.total_weight) || 0) - ((b.remaining_weight / b.total_weight) || 0)
+                    );
+                    break;
+                case 'date':
+                    result.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+                    break;
+                default:
+                    result.sort((a, b) => (a.material || '').localeCompare(b.material || ''));
+            }
+
+            return result;
+        }
+
+        function updateBrandFilter() {
+            const select = document.getElementById('brandFilter');
+            if (!select) return;
+            const brands = [...new Set(filaments.map(f => f.brand).filter(Boolean))].sort();
+            const current = select.value;
+            select.innerHTML = '<option value="all">All Brands</option>' +
+                brands.map(b => `<option value="${b}" ${b === current ? 'selected' : ''}>${b}</option>`).join('');
         }
 
         function render() {
+            updateBrandFilter();
             const filtered = getFilteredFilaments();
+
+            // Update search count
+            const countEl = document.getElementById('searchCount');
+            if (countEl) {
+                const searchTerm = document.getElementById('searchInput')?.value?.trim();
+                const brandVal = document.getElementById('brandFilter')?.value;
+                if (searchTerm || (brandVal && brandVal !== 'all') || currentFilter !== 'all') {
+                    countEl.textContent = `Showing ${filtered.length} of ${filaments.length} spools`;
+                } else {
+                    countEl.textContent = '';
+                }
+            }
 
             if (filtered.length === 0) {
                 spoolGrid.innerHTML = `
@@ -2419,6 +2714,7 @@
 
         function toggleHistory() {
             document.getElementById('historyPanel').classList.toggle('open');
+            renderCostChart();
         }
 
         function openPrintModal() {
@@ -2514,6 +2810,71 @@
                 closePrintModal();
             }
         });
+
+        // ====== SIDEBAR TOGGLE ======
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar-nav');
+            const overlay = document.getElementById('sidebarOverlay');
+            const hamburger = document.getElementById('hamburgerBtn');
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('active');
+            hamburger.classList.toggle('active');
+        }
+
+        function closeSidebar() {
+            const sidebar = document.querySelector('.sidebar-nav');
+            const overlay = document.getElementById('sidebarOverlay');
+            const hamburger = document.getElementById('hamburgerBtn');
+            sidebar.classList.remove('open');
+            overlay.classList.remove('active');
+            hamburger.classList.remove('active');
+        }
+
+        // ====== COST CHART ======
+        function renderCostChart() {
+            const container = document.getElementById('costChartContainer');
+            const chart = document.getElementById('costChart');
+            if (!container || !chart || printHistory.length === 0) {
+                if (container) container.style.display = 'none';
+                return;
+            }
+
+            // Group costs by month
+            const monthlyCosts = {};
+            const now = new Date();
+            for (let i = 11; i >= 0; i--) {
+                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                monthlyCosts[key] = 0;
+            }
+
+            printHistory.forEach(p => {
+                if (p.cost) {
+                    const d = new Date(p.created_at);
+                    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                    if (monthlyCosts.hasOwnProperty(key)) {
+                        monthlyCosts[key] += p.cost;
+                    }
+                }
+            });
+
+            const maxCost = Math.max(...Object.values(monthlyCosts), 1);
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+            chart.innerHTML = Object.entries(monthlyCosts).map(([key, cost]) => {
+                const month = parseInt(key.split('-')[1]) - 1;
+                const height = Math.max(2, (cost / maxCost) * 100);
+                return `
+                    <div class="cost-bar-wrapper">
+                        <div class="cost-bar-value">${cost > 0 ? '€' + cost.toFixed(0) : ''}</div>
+                        <div class="cost-bar" style="height: ${height}%"></div>
+                        <div class="cost-bar-label">${monthNames[month]}</div>
+                    </div>
+                `;
+            }).join('');
+
+            container.style.display = 'block';
+        }
 
         // ====== THEME TOGGLE ======
         (function initTheme() {

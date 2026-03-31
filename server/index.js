@@ -192,12 +192,31 @@ app.post('/api/filaments', authenticateToken, (req, res) => {
 });
 
 app.put('/api/filaments/:id', authenticateToken, (req, res) => {
-    const { remaining_weight } = req.body;
+    const { remaining_weight, material, color_name, color, brand, total_weight, price, supplier_id } = req.body;
     const filamentId = req.params.id;
 
+    // Build dynamic update
+    const fields = [];
+    const values = [];
+
+    if (remaining_weight !== undefined) { fields.push('remaining_weight = ?'); values.push(remaining_weight); }
+    if (material !== undefined) { fields.push('material = ?'); values.push(material); }
+    if (color_name !== undefined) { fields.push('color_name = ?'); values.push(color_name); }
+    if (color !== undefined) { fields.push('color = ?'); values.push(color); }
+    if (brand !== undefined) { fields.push('brand = ?'); values.push(brand); }
+    if (total_weight !== undefined) { fields.push('total_weight = ?'); values.push(total_weight); }
+    if (price !== undefined) { fields.push('price = ?'); values.push(price); }
+    if (supplier_id !== undefined) { fields.push('supplier_id = ?'); values.push(supplier_id || null); }
+
+    if (fields.length === 0) {
+        return res.status(400).json({ error: 'No fields to update' });
+    }
+
+    values.push(filamentId, req.user.userId);
+
     db.run(
-        'UPDATE filaments SET remaining_weight = ? WHERE id = ? AND user_id = ?',
-        [remaining_weight, filamentId, req.user.userId],
+        `UPDATE filaments SET ${fields.join(', ')} WHERE id = ? AND user_id = ?`,
+        values,
         function (err) {
             if (err) {
                 return res.status(500).json({ error: 'Failed to update filament' });
@@ -208,7 +227,6 @@ app.put('/api/filaments/:id', authenticateToken, (req, res) => {
 
             db.get('SELECT f.*, u.alert_email FROM filaments f JOIN users u ON f.user_id = u.id WHERE f.id = ?', [filamentId], (err, row) => {
                 if (!err && row) {
-                    // Check for low filament alert on manual update too
                     const threshold = parseInt(process.env.LOW_FILAMENT_THRESHOLD) || 200;
                     if (row.remaining_weight <= threshold) {
                         sendLowFilamentAlert(row, row.remaining_weight, row.alert_email);

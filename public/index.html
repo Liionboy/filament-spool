@@ -1767,15 +1767,74 @@
         </main>
 
         <div class="modal-overlay" id="editModal">
-            <div class="modal">
-                <h3>Update Weight</h3>
-                <div class="form-group">
-                    <label>Remaining Weight (g)</label>
-                    <input type="number" id="editWeight" min="0" step="any">
+            <div class="modal" style="max-width: 500px;">
+                <h3>Edit Filament</h3>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Material</label>
+                        <select id="editMaterial">
+                            <option value="PLA">PLA</option>
+                            <option value="PLA+">PLA+</option>
+                            <option value="PETG">PETG</option>
+                            <option value="ABS">ABS</option>
+                            <option value="TPU">TPU</option>
+                            <option value="ASA">ASA</option>
+                            <option value="Nylon">Nylon</option>
+                            <option value="PC">PC</option>
+                            <option value="HIPS">HIPS</option>
+                            <option value="Wood">Wood</option>
+                            <option value="Carbon">Carbon</option>
+                            <option value="OTHER">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Brand</label>
+                        <input type="text" id="editBrand" placeholder="eSun, Sunlu...">
+                    </div>
                 </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Color Name</label>
+                        <input type="text" id="editColorName" placeholder="White, Black...">
+                    </div>
+                    <div class="form-group">
+                        <label>Color</label>
+                        <div class="color-picker-wrapper">
+                            <input type="color" id="editColor" value="#ffffff">
+                            <div class="color-preview" id="editColorPreview"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Total Weight (g)</label>
+                        <input type="number" id="editTotalWeight" min="0" step="any">
+                    </div>
+                    <div class="form-group">
+                        <label>Remaining Weight (g)</label>
+                        <input type="number" id="editWeight" min="0" step="any">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Price (€)</label>
+                        <input type="number" id="editPrice" min="0" step="0.01" placeholder="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label>Supplier</label>
+                        <select id="editSupplier">
+                            <option value="">No supplier</option>
+                        </select>
+                    </div>
+                </div>
+
                 <div class="modal-actions">
                     <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-                    <button class="btn" onclick="saveEdit()">Save</button>
+                    <button class="btn" onclick="saveEdit()">Save Changes</button>
                 </div>
             </div>
         </div>
@@ -2227,10 +2286,25 @@
         async function saveEdit() {
             if (editingId) {
                 try {
-                    const newWeight = parseFloat(editWeightInput.value);
+                    const payload = {
+                        material: document.getElementById('editMaterial').value,
+                        brand: document.getElementById('editBrand').value.trim(),
+                        color_name: document.getElementById('editColorName').value.trim(),
+                        color: document.getElementById('editColor').value,
+                        total_weight: parseFloat(document.getElementById('editTotalWeight').value),
+                        remaining_weight: parseFloat(document.getElementById('editWeight').value),
+                        price: parseFloat(document.getElementById('editPrice').value) || 0,
+                        supplier_id: document.getElementById('editSupplier').value ? parseInt(document.getElementById('editSupplier').value) : null
+                    };
+
+                    if (!payload.brand || !payload.color_name || isNaN(payload.total_weight) || isNaN(payload.remaining_weight)) {
+                        showToast('Please fill in all required fields', 'error');
+                        return;
+                    }
+
                     const updated = await apiFetch(`/filaments/${editingId}`, {
                         method: 'PUT',
-                        body: JSON.stringify({ remaining_weight: newWeight })
+                        body: JSON.stringify(payload)
                     });
 
                     const index = filaments.findIndex(f => f.id === editingId);
@@ -2238,7 +2312,7 @@
                     render();
                     closeModal();
                     loadStats();
-                    showToast('Weight updated', 'success');
+                    showToast('Filament updated', 'success');
                 } catch (err) {
                     showToast(err.message, 'error');
                 }
@@ -2681,10 +2755,28 @@
         // Remaining helpers
         function openEditModal(id) {
             editingId = id;
-            const filament = filaments.find(f => f.id === id);
-            editWeightInput.value = filament.remaining_weight;
+            const f = filaments.find(x => x.id === id);
+            document.getElementById('editMaterial').value = f.material;
+            document.getElementById('editBrand').value = f.brand;
+            document.getElementById('editColorName').value = f.color_name;
+            document.getElementById('editColor').value = f.color;
+            document.getElementById('editColorPreview').style.background = f.color;
+            document.getElementById('editTotalWeight').value = f.total_weight;
+            document.getElementById('editWeight').value = f.remaining_weight;
+            document.getElementById('editPrice').value = f.price || '';
+
+            // Populate supplier dropdown
+            const supplierSelect = document.getElementById('editSupplier');
+            supplierSelect.innerHTML = '<option value="">No supplier</option>' +
+                suppliers.map(s => `<option value="${s.id}" ${s.id === f.supplier_id ? 'selected' : ''}>${s.name}</option>`).join('');
+
             editModal.classList.add('active');
         }
+
+        // Live color preview
+        document.getElementById('editColor')?.addEventListener('input', (e) => {
+            document.getElementById('editColorPreview').style.background = e.target.value;
+        });
 
         function closeModal() {
             editModal.classList.remove('active');

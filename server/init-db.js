@@ -217,6 +217,101 @@ const initDatabase = async () => {
         });
     });
 
+    // FEATURE 1: Add location column to filaments table
+    await new Promise((resolve) => {
+        db.run('ALTER TABLE filaments ADD COLUMN location TEXT', (err) => {
+            if (err) {
+                if (err.message.includes('duplicate column name')) {
+                    console.log('location column already exists.');
+                } else {
+                    console.error('Migration error (location):', err.message);
+                }
+            } else {
+                console.log('Added location column to filaments.');
+            }
+            resolve();
+        });
+    });
+
+    // FEATURE 2: Add notes column to filaments table
+    await new Promise((resolve) => {
+        db.run('ALTER TABLE filaments ADD COLUMN notes TEXT', (err) => {
+            if (err) {
+                if (err.message.includes('duplicate column name')) {
+                    console.log('notes column already exists.');
+                } else {
+                    console.error('Migration error (notes):', err.message);
+                }
+            } else {
+                console.log('Added notes column to filaments.');
+            }
+            resolve();
+        });
+    });
+
+    // FEATURE 4: Add currency and exchange_rate to users table
+    await new Promise((resolve) => {
+        db.run('ALTER TABLE users ADD COLUMN currency TEXT DEFAULT "EUR"', (err) => {
+            if (err) {
+                if (err.message.includes('duplicate column name')) {
+                    console.log('currency column already exists.');
+                } else {
+                    console.error('Migration error (currency):', err.message);
+                }
+            } else {
+                console.log('Added currency column to users.');
+            }
+            resolve();
+        });
+    });
+
+    await new Promise((resolve) => {
+        db.run('ALTER TABLE users ADD COLUMN exchange_rate REAL DEFAULT 5.0', (err) => {
+            if (err) {
+                if (err.message.includes('duplicate column name')) {
+                    console.log('exchange_rate column already exists.');
+                } else {
+                    console.error('Migration error (exchange_rate):', err.message);
+                }
+            } else {
+                console.log('Added exchange_rate column to users.');
+            }
+            resolve();
+        });
+    });
+
+    // FEATURE 5: Add low_stock_threshold to users table
+    await new Promise((resolve) => {
+        db.run('ALTER TABLE users ADD COLUMN low_stock_threshold INTEGER DEFAULT 200', (err) => {
+            if (err) {
+                if (err.message.includes('duplicate column name')) {
+                    console.log('low_stock_threshold column already exists.');
+                } else {
+                    console.error('Migration error (low_stock_threshold):', err.message);
+                }
+            } else {
+                console.log('Added low_stock_threshold column to users.');
+            }
+            resolve();
+        });
+    });
+
+    // FEATURE 7: Add tare_weight column to filaments table
+    await new Promise((resolve) => {
+        db.run('ALTER TABLE filaments ADD COLUMN tare_weight REAL DEFAULT 0', (err) => {
+            if (err) {
+                if (err.message.includes('duplicate column name')) {
+                    console.log('tare_weight column already exists.');
+                } else {
+                    console.error('Migration error (tare_weight):', err.message);
+                }
+            } else {
+                console.log('Added tare_weight column to filaments.');
+            }
+            resolve();
+        });
+    });
+
     // Insert default brands for demo user (if we create one)
     console.log('Database initialized successfully!');
     db.close();

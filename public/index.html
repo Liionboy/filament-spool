@@ -1483,7 +1483,7 @@
 
     <!-- Settings Modal -->
     <div id="settingsModal" class="modal-overlay">
-        <div class="modal">
+        <div class="modal" style="max-width: 500px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                 <h3 style="margin: 0;">User Settings</h3>
                 <button class="close-history" onclick="closeSettingsModal()" style="border: none; background: none;">
@@ -1500,6 +1500,27 @@
                         alerts will be sent here.</p>
                     <input type="email" id="alertEmailInput" placeholder="email@example.com" required>
                 </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Preferred Currency</label>
+                        <select id="currencyInput" required>
+                            <option value="EUR">EUR (€)</option>
+                            <option value="RON">RON (lei)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Exchange Rate (RON per EUR)</label>
+                        <input type="number" id="exchangeRateInput" placeholder="5.0" min="0.01" step="0.01" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Low Stock Threshold (grams)</label>
+                    <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Spools below this weight will trigger low stock alerts.</p>
+                    <input type="number" id="lowStockThresholdInput" placeholder="200" min="1" step="1" required>
+                </div>
+
                 <div style="display: flex; gap: 1rem; margin-top: 2rem;">
                     <button type="submit" class="btn">Save Settings</button>
                     <button type="button" class="btn btn-secondary" onclick="closeSettingsModal()">Cancel</button>
@@ -1634,6 +1655,21 @@
                 </svg>
                 <span>Notifications</span>
             </button>
+            <button class="sidebar-btn" onclick="printAllQRCodes()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+                    <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/>
+                    <line x1="21" y1="14" x2="21" y2="21"/><line x1="14" y1="21" x2="21" y2="21"/>
+                </svg>
+                <span>Print All QR</span>
+            </button>
+            <button class="sidebar-btn" onclick="openWeightHelperModal()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2v20M2 12h20" stroke-dasharray="4 2"/>
+                    <circle cx="12" cy="12" r="3"/>
+                </svg>
+                <span>Weight Helper</span>
+            </button>
         </nav>
 
         <main class="container">
@@ -1722,6 +1758,21 @@
                                 </select>
                             </div>
 
+                            <div class="form-group">
+                                <label>Location</label>
+                                <input type="text" id="location" placeholder="e.g., Shelf A3, Top Box">
+                            </div>
+
+                            <div class="form-group">
+                                <label>Notes</label>
+                                <textarea id="notes" placeholder="Any additional notes..." rows="3" style="width: 100%; background: var(--bg-dark); border: 2px solid var(--border); border-radius: 4px; padding: 0.75rem 1rem; color: var(--text-primary); font-family: 'Space Mono', monospace; font-size: 0.9rem; resize: vertical;"></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Tare Weight (empty spool weight in g)</label>
+                                <input type="number" id="tareWeight" placeholder="e.g., 250" min="0" step="any">
+                            </div>
+
                             <button type="submit" class="btn">Add to Inventory</button>
                         </form>
                     </div>
@@ -1729,6 +1780,42 @@
             </aside>
 
             <section class="main-content">
+                <!-- Low Stock Widget -->
+                <div id="lowStockWidget" style="display: none; background: linear-gradient(90deg, rgba(255,51,102,0.2), rgba(255,51,102,0.1)); border: 2px solid var(--danger); border-radius: 8px; padding: 1rem 1.5rem; margin-bottom: 1.5rem; cursor: pointer; transition: all 0.2s;" onclick="toggleLowStockFilter()">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                            <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                        </svg>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 700; color: var(--danger);">⚠️ Low Stock Alert</div>
+                            <div style="font-size: 0.85rem; color: var(--text-secondary);"><span id="lowStockCount">0</span> spools below <span id="lowStockThreshold">200</span>g remaining — Click to view</div>
+                        </div>
+                        <div style="background: var(--danger); color: white; padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700;">VIEW</div>
+                    </div>
+                </div>
+
+                <!-- Comparison Panel -->
+                <div id="comparisonPanel" style="display: none; background: var(--bg-panel); border: 2px solid var(--accent); border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3 style="font-family: 'Teko', sans-serif; font-size: 1.5rem; margin: 0;">Compare Filaments</h3>
+                        <button class="btn-icon" onclick="clearComparison()" style="color: var(--danger);">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div id="comparisonContent" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;"></div>
+                </div>
+
+                <!-- Currency Toggle -->
+                <div style="display: flex; justify-content: flex-end; margin-bottom: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; background: var(--bg-panel); border: 2px solid var(--border); border-radius: 4px; padding: 0.25rem;">
+                        <button id="currencyEUR" class="currency-btn active" onclick="setCurrency('EUR')" style="padding: 0.4rem 0.75rem; border: none; background: var(--accent); color: var(--bg-dark); font-family: 'Space Mono', monospace; font-size: 0.75rem; font-weight: 700; border-radius: 3px; cursor: pointer;">EUR</button>
+                        <button id="currencyRON" class="currency-btn" onclick="setCurrency('RON')" style="padding: 0.4rem 0.75rem; border: none; background: transparent; color: var(--text-secondary); font-family: 'Space Mono', monospace; font-size: 0.75rem; cursor: pointer;">RON</button>
+                    </div>
+                </div>
+
                 <div class="filters" id="filters">
                     <div class="filter-chip active" data-filter="all">All</div>
                     <div class="filter-chip" data-filter="PLA">PLA</div>
@@ -1829,6 +1916,18 @@
                         <select id="editSupplier">
                             <option value="">No supplier</option>
                         </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Location</label>
+                        <input type="text" id="editLocation" placeholder="e.g., Shelf A3, Top Box">
+                    </div>
+                    <div class="form-group">
+                        <label>Notes</label>
+                        <textarea id="editNotes" placeholder="Any additional notes..." rows="2" style="width: 100%; background: var(--bg-dark); border: 2px solid var(--border); border-radius: 4px; padding: 0.5rem; color: var(--text-primary); font-family: 'Space Mono', monospace; font-size: 0.85rem; resize: vertical;"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Tare Weight (empty spool g)</label>
+                        <input type="number" id="editTareWeight" min="0" step="any" placeholder="e.g., 250">
                     </div>
                 </div>
 
@@ -2006,6 +2105,56 @@
             <div class="modal-actions">
                 <button class="btn btn-secondary" onclick="closeQRModal()">Close</button>
                 <button class="btn" onclick="downloadQR()">Download PNG</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Weight Helper Modal -->
+    <div id="weightHelperModal" class="modal-overlay" onclick="if(event.target===this)closeWeightHelperModal()">
+        <div class="modal" style="max-width: 450px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h3 style="margin: 0;">⚖️ Weight Estimation Helper</h3>
+                <button class="close-history" onclick="closeWeightHelperModal()" style="border: none; background: none;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="form-group">
+                <label>Select Spool (optional)</label>
+                <select id="helperSpoolSelect" onchange="fillTareWeight()" style="width: 100%; background: var(--bg-dark); border: 2px solid var(--border); border-radius: 4px; padding: 0.75rem 1rem; color: var(--text-primary); font-family: 'Space Mono', monospace; font-size: 0.9rem;">
+                    <option value="">-- Manual entry --</option>
+                </select>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Tare Weight (empty spool)</label>
+                    <input type="number" id="helperTareWeight" placeholder="250" min="0" step="any" oninput="calculateRemainingWeight()" style="width: 100%; background: var(--bg-dark); border: 2px solid var(--border); border-radius: 4px; padding: 0.75rem 1rem; color: var(--text-primary); font-family: 'Space Mono', monospace; font-size: 0.9rem;">
+                </div>
+                <div class="form-group">
+                    <label>Current Scale Weight</label>
+                    <input type="number" id="helperScaleWeight" placeholder="750" min="0" step="any" oninput="calculateRemainingWeight()" style="width: 100%; background: var(--bg-dark); border: 2px solid var(--border); border-radius: 4px; padding: 0.75rem 1rem; color: var(--text-primary); font-family: 'Space Mono', monospace; font-size: 0.9rem;">
+                </div>
+            </div>
+
+            <div id="helperResult" style="background: var(--bg-card); border: 2px solid var(--accent); border-radius: 8px; padding: 1.5rem; margin: 1.5rem 0; text-align: center; display: none;">
+                <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.5rem;">Estimated Remaining Filament</div>
+                <div id="helperResultValue" style="font-family: 'Teko', sans-serif; font-size: 3rem; color: var(--accent);">0g</div>
+            </div>
+
+            <div id="helperSaveOption" style="display: none; margin-bottom: 1rem;">
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                    <input type="checkbox" id="helperSaveTare" style="width: auto;">
+                    <span style="font-size: 0.85rem;">Save tare weight to this spool</span>
+                </label>
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeWeightHelperModal()">Close</button>
+                <button type="button" id="helperUpdateBtn" class="btn" onclick="updateSpoolFromHelper()" style="display: none;">Update Spool</button>
             </div>
         </div>
     </div>
@@ -2220,6 +2369,9 @@
                 updateSupplierSelects();
                 checkPushSubscription();
                 updateStatsFromResponse(stats);
+                await loadSettings();
+                updateLowStockWidget();
+                renderComparisonPanel();
             } catch (err) {
                 showToast('Failed to load data', 'error');
             }
@@ -2246,7 +2398,10 @@
                     total_weight: parseFloat(document.getElementById('totalWeight').value),
                     remaining_weight: parseFloat(document.getElementById('remainingWeight').value),
                     price: parseFloat(document.getElementById('price').value) || 0,
-                    supplier_id: parseInt(document.getElementById('filamentSupplier')?.value) || null
+                    supplier_id: parseInt(document.getElementById('filamentSupplier')?.value) || null,
+                    location: document.getElementById('location')?.value?.trim() || null,
+                    notes: document.getElementById('notes')?.value?.trim() || null,
+                    tare_weight: parseFloat(document.getElementById('tareWeight')?.value) || 0
                 };
 
                 const newFil = await apiFetch('/filaments', {
@@ -2294,7 +2449,10 @@
                         total_weight: parseFloat(document.getElementById('editTotalWeight').value),
                         remaining_weight: parseFloat(document.getElementById('editWeight').value),
                         price: parseFloat(document.getElementById('editPrice').value) || 0,
-                        supplier_id: document.getElementById('editSupplier').value ? parseInt(document.getElementById('editSupplier').value) : null
+                        supplier_id: document.getElementById('editSupplier').value ? parseInt(document.getElementById('editSupplier').value) : null,
+                        location: document.getElementById('editLocation')?.value?.trim() || null,
+                        notes: document.getElementById('editNotes')?.value?.trim() || null,
+                        tare_weight: parseFloat(document.getElementById('editTareWeight')?.value) || 0
                     };
 
                     if (!payload.brand || !payload.color_name || isNaN(payload.total_weight) || isNaN(payload.remaining_weight)) {
@@ -2519,12 +2677,20 @@
         settingsForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const alertEmail = alertEmailInput.value;
+            const currency = document.getElementById('currencyInput')?.value || 'EUR';
+            const exchangeRate = parseFloat(document.getElementById('exchangeRateInput')?.value) || 5.0;
+            const lowStockThreshold = parseInt(document.getElementById('lowStockThresholdInput')?.value) || 200;
 
             try {
                 await apiFetch('/user/settings', {
                     method: 'PUT',
-                    body: JSON.stringify({ alertEmail })
+                    body: JSON.stringify({ alertEmail, currency, exchangeRate, lowStockThreshold })
                 });
+                userCurrency = currency;
+                userExchangeRate = exchangeRate;
+                userLowStockThreshold = lowStockThreshold;
+                setCurrency(userCurrency);
+                updateLowStockWidget();
                 showToast('Settings saved successfully', 'success');
                 closeSettingsModal();
 
@@ -2610,8 +2776,15 @@
                     f.material?.toLowerCase().includes(searchTerm) ||
                     f.brand?.toLowerCase().includes(searchTerm) ||
                     f.color_name?.toLowerCase().includes(searchTerm) ||
-                    f.color?.toLowerCase().includes(searchTerm)
+                    f.color?.toLowerCase().includes(searchTerm) ||
+                    f.location?.toLowerCase().includes(searchTerm) ||
+                    f.notes?.toLowerCase().includes(searchTerm)
                 );
+            }
+
+            // Low stock filter
+            if (lowStockFilterActive) {
+                result = result.filter(f => f.remaining_weight <= userLowStockThreshold);
             }
 
             // Brand filter
@@ -2745,7 +2918,14 @@
                                 <span class="weight-remaining">${Number(f.remaining_weight).toFixed(2)}g remaining</span>
                                 <span>${Math.round(percentage)}%</span>
                             </div>
-                            ${f.price ? `<div class="spool-cost">€${f.price.toFixed(2)} total · <span>€${costPerGram}/g</span></div>` : ''}
+                            ${f.price ? `<div class="spool-cost">${formatPrice(f.price)} total · <span>€${costPerGram}/g</span></div>` : ''}
+                            ${f.location ? `<div style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 2px;">📍 ${f.location}</div>` : ''}
+                            ${f.notes ? `<div style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${f.notes.replace(/"/g, '&quot;')}">📝 ${f.notes}</div>` : ''}
+                            <div style="margin-top: 4px;">
+                                <label style="font-size: 0.65rem; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                                    <input type="checkbox" ${comparisonIds.includes(f.id) ? 'checked' : ''} onchange="toggleComparison(${f.id})" style="accent-color: var(--accent);"> Compare
+                                </label>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -2769,6 +2949,11 @@
             const supplierSelect = document.getElementById('editSupplier');
             supplierSelect.innerHTML = '<option value="">No supplier</option>' +
                 suppliers.map(s => `<option value="${s.id}" ${s.id === f.supplier_id ? 'selected' : ''}>${s.name}</option>`).join('');
+
+            // Populate new fields
+            document.getElementById('editLocation').value = f.location || '';
+            document.getElementById('editNotes').value = f.notes || '';
+            document.getElementById('editTareWeight').value = f.tare_weight || '';
 
             editModal.classList.add('active');
         }
@@ -3591,6 +3776,259 @@
         // Override savePrint in the event handler section
         // We need to patch the print save to include printer_id
         // The savePrint function is defined inline, so let's add printer support there
+
+        // ====== NEW FEATURES JS ======
+
+        // --- CURRENCY ---
+        let userCurrency = 'EUR';
+        let userExchangeRate = 5.0;
+        let userLowStockThreshold = 200;
+        let lowStockFilterActive = false;
+        let comparisonIds = [];
+
+        function setCurrency(currency) {
+            userCurrency = currency;
+            localStorage.setItem('filament-currency', currency);
+            document.getElementById('currencyEUR').className = 'currency-btn' + (currency === 'EUR' ? ' active' : '');
+            document.getElementById('currencyRON').className = 'currency-btn' + (currency === 'RON' ? ' active' : '');
+            document.getElementById('currencyEUR').style.background = currency === 'EUR' ? 'var(--accent)' : 'transparent';
+            document.getElementById('currencyEUR').style.color = currency === 'EUR' ? 'var(--bg-dark)' : 'var(--text-secondary)';
+            document.getElementById('currencyRON').style.background = currency === 'RON' ? 'var(--accent)' : 'transparent';
+            document.getElementById('currencyRON').style.color = currency === 'RON' ? 'var(--bg-dark)' : 'var(--text-secondary)';
+            render();
+        }
+
+        function formatPrice(eurPrice) {
+            if (!eurPrice && eurPrice !== 0) return '';
+            if (userCurrency === 'RON') {
+                return (eurPrice * userExchangeRate).toFixed(2) + ' lei';
+            }
+            return '€' + eurPrice.toFixed(2);
+        }
+
+        // --- LOW STOCK WIDGET ---
+        function updateLowStockWidget() {
+            const widget = document.getElementById('lowStockWidget');
+            if (!widget) return;
+            const lowStock = filaments.filter(f => f.remaining_weight <= userLowStockThreshold);
+            const countEl = document.getElementById('lowStockCount');
+            const threshEl = document.getElementById('lowStockThreshold');
+            if (countEl) countEl.textContent = lowStock.length;
+            if (threshEl) threshEl.textContent = userLowStockThreshold;
+            widget.style.display = lowStock.length > 0 ? 'block' : 'none';
+        }
+
+        function toggleLowStockFilter() {
+            lowStockFilterActive = !lowStockFilterActive;
+            const widget = document.getElementById('lowStockWidget');
+            if (widget) {
+                widget.style.borderColor = lowStockFilterActive ? 'var(--accent)' : 'var(--danger)';
+            }
+            render();
+        }
+
+        // --- COMPARISON ---
+        function toggleComparison(id) {
+            const idx = comparisonIds.indexOf(id);
+            if (idx > -1) {
+                comparisonIds.splice(idx, 1);
+            } else if (comparisonIds.length < 4) {
+                comparisonIds.push(id);
+            }
+            renderComparisonPanel();
+            render();
+        }
+
+        function clearComparison() {
+            comparisonIds = [];
+            document.getElementById('comparisonPanel').style.display = 'none';
+            render();
+        }
+
+        function renderComparisonPanel() {
+            const panel = document.getElementById('comparisonPanel');
+            const content = document.getElementById('comparisonContent');
+            if (!panel || !content) return;
+
+            if (comparisonIds.length < 2) {
+                panel.style.display = 'none';
+                return;
+            }
+
+            panel.style.display = 'block';
+            const selected = comparisonIds.map(id => filaments.find(f => f.id === id)).filter(Boolean);
+
+            const costPerGram = selected.map(f => f.price ? (f.price / f.total_weight) : null);
+            const bestCostIdx = costPerGram.filter(c => c !== null).length > 0
+                ? costPerGram.indexOf(Math.min(...costPerGram.filter(c => c !== null)))
+                : -1;
+            const bestWeightIdx = selected.indexOf(selected.reduce((a, b) =>
+                (a.remaining_weight / a.total_weight) > (b.remaining_weight / b.total_weight) ? a : b
+            ));
+
+            content.innerHTML = selected.map((f, i) => {
+                const pct = Math.round((f.remaining_weight / f.total_weight) * 100);
+                const cpg = f.price ? (f.price / f.total_weight).toFixed(3) : 'N/A';
+                return `
+                    <div style="background: var(--bg-dark); border-radius: 8px; padding: 1rem; border: 2px solid ${f.color}33;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+                            <div style="width: 12px; height: 12px; border-radius: 50%; background: ${f.color};"></div>
+                            <strong style="font-size: 0.85rem;">${f.brand}</strong>
+                        </div>
+                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem;">${f.material} · ${f.color_name}</div>
+                        <div style="font-size: 0.8rem; margin-bottom: 0.25rem;">
+                            Weight: <strong>${Number(f.remaining_weight).toFixed(0)}g</strong> / ${Number(f.total_weight).toFixed(0)}g
+                            ${i === bestWeightIdx ? '<span style="color: var(--accent); font-size: 0.7rem;"> ★ Best</span>' : ''}
+                        </div>
+                        <div style="font-size: 0.8rem; margin-bottom: 0.25rem;">
+                            Remaining: <strong>${pct}%</strong>
+                        </div>
+                        ${f.price ? `<div style="font-size: 0.8rem; margin-bottom: 0.25rem;">
+                            Price: <strong>${formatPrice(f.price)}</strong>
+                            ${i === bestCostIdx ? '<span style="color: var(--accent); font-size: 0.7rem;"> ★ Best value</span>' : ''}
+                        </div>` : ''}
+                        <div style="font-size: 0.8rem;">
+                            Cost/g: <strong>${cpg !== 'N/A' ? '€' + cpg : cpg}</strong>
+                        </div>
+                        <button onclick="toggleComparison(${f.id})" style="margin-top: 0.5rem; font-size: 0.7rem; color: var(--danger); background: none; border: none; cursor: pointer; font-family: 'Space Mono', monospace;">Remove</button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // --- WEIGHT HELPER ---
+        function openWeightHelperModal() {
+            const select = document.getElementById('helperSpoolSelect');
+            if (select) {
+                select.innerHTML = '<option value="">-- Manual entry --</option>' +
+                    filaments.map(f => `<option value="${f.id}" data-tare="${f.tare_weight || 0}">${f.brand} ${f.material} - ${f.color_name}</option>`).join('');
+            }
+            document.getElementById('weightHelperModal').classList.add('active');
+        }
+
+        function closeWeightHelperModal() {
+            document.getElementById('weightHelperModal').classList.remove('active');
+        }
+
+        function fillTareWeight() {
+            const select = document.getElementById('helperSpoolSelect');
+            const tareInput = document.getElementById('helperTareWeight');
+            if (select && tareInput && select.value) {
+                const option = select.options[select.selectedIndex];
+                tareInput.value = option.dataset.tare || '';
+            }
+        }
+
+        function calculateWeight() {
+            const tare = parseFloat(document.getElementById('helperTareWeight')?.value) || 0;
+            const current = parseFloat(document.getElementById('helperScaleWeight')?.value) || 0;
+            const result = document.getElementById('helperResult');
+            if (!result) return;
+
+            if (tare <= 0 || current <= 0) {
+                result.style.display = 'none';
+                return;
+            }
+
+            const remaining = Math.max(0, current - tare);
+            result.style.display = 'block';
+            document.getElementById('helperResultValue').textContent = remaining.toFixed(1) + 'g';
+
+            // Show save option if a spool is selected
+            const spoolId = document.getElementById('helperSpoolSelect')?.value;
+            const saveOption = document.getElementById('helperSaveOption');
+            if (saveOption) saveOption.style.display = spoolId ? 'block' : 'none';
+        }
+
+        // Alias for HTML oninput
+        function calculateRemainingWeight() { calculateWeight(); }
+
+        async function saveTareWeightToSpool() {
+            const spoolId = document.getElementById('helperSpoolSelect')?.value;
+            const tare = parseFloat(document.getElementById('helperTareWeight')?.value) || 0;
+            if (!spoolId || tare <= 0) return;
+            try {
+                await apiFetch(`/filaments/${spoolId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ tare_weight: tare })
+                });
+                const f = filaments.find(x => x.id === parseInt(spoolId));
+                if (f) f.tare_weight = tare;
+                showToast('Tare weight saved to spool', 'success');
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        // --- PRINT ALL QR CODES ---
+        function printAllQRCodes() {
+            if (filaments.length === 0) {
+                showToast('No filaments to generate QR codes for', 'warning');
+                return;
+            }
+            showToast('Generating QR PDF...', 'success');
+            const token = localStorage.getItem('token');
+            const url = '/api/qr/batch';
+
+            fetch(url, {
+                headers: { 'Authorization': 'Bearer ' + token }
+            })
+            .then(res => {
+                if (!res.ok) throw new Error('Failed to generate PDF');
+                return res.blob();
+            })
+            .then(blob => {
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'filament-qr-codes.pdf';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(a.href);
+            })
+            .catch(err => showToast(err.message, 'error'));
+        }
+
+        // --- SETTINGS SAVE/LOAD (updated) ---
+        async function loadSettings() {
+            try {
+                const settings = await apiFetch('/user/settings');
+                document.getElementById('alertEmailInput').value = settings.alertEmail || '';
+                document.getElementById('currencyInput').value = settings.currency || 'EUR';
+                document.getElementById('exchangeRateInput').value = settings.exchangeRate || 5.0;
+                document.getElementById('lowStockThresholdInput').value = settings.lowStockThreshold || 200;
+                userCurrency = settings.currency || 'EUR';
+                userExchangeRate = settings.exchangeRate || 5.0;
+                userLowStockThreshold = settings.lowStockThreshold || 200;
+                setCurrency(userCurrency);
+            } catch (err) { /* not critical */ }
+        }
+
+        async function saveSettings(e) {
+            e.preventDefault();
+            try {
+                const data = {
+                    alertEmail: document.getElementById('alertEmailInput').value,
+                    currency: document.getElementById('currencyInput').value,
+                    exchangeRate: parseFloat(document.getElementById('exchangeRateInput').value) || 5.0,
+                    lowStockThreshold: parseInt(document.getElementById('lowStockThresholdInput').value) || 200
+                };
+                await apiFetch('/user/settings', {
+                    method: 'PUT',
+                    body: JSON.stringify(data)
+                });
+                userCurrency = data.currency;
+                userExchangeRate = data.exchangeRate;
+                userLowStockThreshold = data.lowStockThreshold;
+                setCurrency(userCurrency);
+                updateLowStockWidget();
+                closeSettingsModal();
+                showToast('Settings saved', 'success');
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
     </script>
 </body>
 

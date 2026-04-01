@@ -7,15 +7,101 @@ const path = require('path');
 require('dotenv').config();
 const { sendLowFilamentAlert } = require('./email-service');
 const QRCode = require('qrcode');
+const PDFDocument = require('pdfkit');
+const swaggerUi = require('swagger-ui-express');
+const swaggerJsdoc = require('swagger-jsdoc');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this-in-production';
 
+// Swagger Configuration
+const swaggerOptions = {
+    definition: {
+        openapi: '3.0.0',
+        info: {
+            title: 'Filament Spool API',
+            version: '1.0.0',
+            description: '3D Filament Inventory Management API',
+        },
+        servers: [
+            {
+                url: '/api',
+                description: 'API Server',
+            },
+        ],
+        components: {
+            securitySchemes: {
+                bearerAuth: {
+                    type: 'http',
+                    scheme: 'bearer',
+                    bearerFormat: 'JWT',
+                },
+            },
+            schemas: {
+                Filament: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'integer' },
+                        user_id: { type: 'integer' },
+                        material: { type: 'string' },
+                        color_name: { type: 'string' },
+                        color: { type: 'string' },
+                        brand: { type: 'string' },
+                        total_weight: { type: 'number' },
+                        remaining_weight: { type: 'number' },
+                        price: { type: 'number' },
+                        supplier_id: { type: 'integer', nullable: true },
+                        location: { type: 'string', nullable: true },
+                        notes: { type: 'string', nullable: true },
+                        tare_weight: { type: 'number', nullable: true },
+                        created_at: { type: 'string', format: 'date-time' },
+                    },
+                },
+                User: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'integer' },
+                        username: { type: 'string' },
+                        email: { type: 'string' },
+                        alert_email: { type: 'string', nullable: true },
+                        currency: { type: 'string', default: 'EUR' },
+                        exchange_rate: { type: 'number', default: 5.0 },
+                        low_stock_threshold: { type: 'integer', default: 200 },
+                    },
+                },
+                PrintHistory: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'integer' },
+                        user_id: { type: 'integer' },
+                        name: { type: 'string' },
+                        filament_id: { type: 'integer' },
+                        material: { type: 'string' },
+                        brand: { type: 'string' },
+                        color_name: { type: 'string' },
+                        color: { type: 'string' },
+                        weight_used: { type: 'number' },
+                        cost: { type: 'number' },
+                        printer_id: { type: 'integer', nullable: true },
+                        created_at: { type: 'string', format: 'date-time' },
+                    },
+                },
+            },
+        },
+    },
+    apis: ['./server/index.js'],
+};
+
+const swaggerSpec = swaggerJsdoc(swaggerOptions);
+
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
+
+// Swagger UI
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Database connection
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, '../db/inventory.db');
@@ -122,23 +208,94 @@ app.post('/api/auth/login', (req, res) => {
     );
 });
 
-// User Settings Routes
+/**
+ * @openapi
+ * /user/settings:
+ *   get:
+ *     summary: Get user settings
+ *     tags: [User Settings]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User settings
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 alertEmail: { type: string }
+ *                 currency: { type: string }
+ *                 exchangeRate: { type: number }
+ *                 lowStockThreshold: { type: integer }
+ */
 app.get('/api/user/settings', authenticateToken, (req, res) => {
-    db.get('SELECT alert_email FROM users WHERE id = ?', [req.user.userId], (err, row) => {
+    db.get('SELECT alert_email, currency, exchange_rate, low_stock_threshold FROM users WHERE id = ?', [req.user.userId], (err, row) => {
         if (err) {
             return res.status(500).json({ error: 'Failed to fetch settings' });
         }
-        res.json({ alertEmail: row.alert_email });
+        res.json({
+            alertEmail: row.alert_email,
+            currency: row.currency || 'EUR',
+            exchangeRate: row.exchange_rate || 5.0,
+            lowStockThreshold: row.low_stock_threshold || 200
+        });
     });
 });
 
+/**
+ * @openapi
+ * /user/settings:
+ *   put:
+ *     summary: Update user settings
+ *     tags: [User Settings]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               alertEmail: { type: string }
+ *               currency: { type: string, enum: ['EUR', 'RON'] }
+ *               exchangeRate: { type: number }
+ *               lowStockThreshold: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Settings updated successfully
+ */
 app.put('/api/user/settings', authenticateToken, (req, res) => {
-    const { alertEmail } = req.body;
-    if (!alertEmail) {
-        return res.status(400).json({ error: 'Alert email is required' });
+    const { alertEmail, currency, exchangeRate, lowStockThreshold } = req.body;
+    
+    const updates = [];
+    const values = [];
+    
+    if (alertEmail !== undefined) {
+        updates.push('alert_email = ?');
+        values.push(alertEmail);
     }
+    if (currency !== undefined) {
+        updates.push('currency = ?');
+        values.push(currency);
+    }
+    if (exchangeRate !== undefined) {
+        updates.push('exchange_rate = ?');
+        values.push(exchangeRate);
+    }
+    if (lowStockThreshold !== undefined) {
+        updates.push('low_stock_threshold = ?');
+        values.push(lowStockThreshold);
+    }
+    
+    if (updates.length === 0) {
+        return res.status(400).json({ error: 'No fields to update' });
+    }
+    
+    values.push(req.user.userId);
 
-    db.run('UPDATE users SET alert_email = ? WHERE id = ?', [alertEmail, req.user.userId], function (err) {
+    db.run(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, values, function (err) {
         if (err) {
             return res.status(500).json({ error: 'Failed to update settings' });
         }
@@ -146,7 +303,24 @@ app.put('/api/user/settings', authenticateToken, (req, res) => {
     });
 });
 
-// Filament Routes
+/**
+ * @openapi
+ * /filaments:
+ *   get:
+ *     summary: Get all filaments for the current user
+ *     tags: [Filaments]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of filaments
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Filament'
+ */
 app.get('/api/filaments', authenticateToken, (req, res) => {
     db.all(
         'SELECT * FROM filaments WHERE user_id = ? ORDER BY created_at DESC',
@@ -160,17 +334,52 @@ app.get('/api/filaments', authenticateToken, (req, res) => {
     );
 });
 
+/**
+ * @openapi
+ * /filaments:
+ *   post:
+ *     summary: Create a new filament
+ *     tags: [Filaments]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [material, color_name, color, brand, total_weight]
+ *             properties:
+ *               material: { type: string }
+ *               color_name: { type: string }
+ *               color: { type: string }
+ *               brand: { type: string }
+ *               total_weight: { type: number }
+ *               remaining_weight: { type: number }
+ *               price: { type: number }
+ *               supplier_id: { type: integer }
+ *               location: { type: string }
+ *               notes: { type: string }
+ *               tare_weight: { type: number }
+ *     responses:
+ *       201:
+ *         description: Filament created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Filament'
+ */
 app.post('/api/filaments', authenticateToken, (req, res) => {
-    const { material, color_name, color, brand, total_weight, remaining_weight, price, supplier_id } = req.body;
+    const { material, color_name, color, brand, total_weight, remaining_weight, price, supplier_id, location, notes, tare_weight } = req.body;
 
     if (!material || !color_name || !color || !brand || !total_weight) {
         return res.status(400).json({ error: 'Missing required fields' });
     }
 
     db.run(
-        `INSERT INTO filaments (user_id, material, color_name, color, brand, total_weight, remaining_weight, price, supplier_id)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [req.user.userId, material, color_name, color, brand, total_weight, remaining_weight || total_weight, price || 0, supplier_id || null],
+        `INSERT INTO filaments (user_id, material, color_name, color, brand, total_weight, remaining_weight, price, supplier_id, location, notes, tare_weight)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [req.user.userId, material, color_name, color, brand, total_weight, remaining_weight || total_weight, price || 0, supplier_id || null, location || null, notes || null, tare_weight || 0],
         function (err) {
             if (err) {
                 return res.status(500).json({ error: 'Failed to add filament' });
@@ -192,8 +401,50 @@ app.post('/api/filaments', authenticateToken, (req, res) => {
     );
 });
 
+/**
+ * @openapi
+ * /filaments/{id}:
+ *   put:
+ *     summary: Update a filament
+ *     tags: [Filaments]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Filament'
+ *     responses:
+ *       200:
+ *         description: Filament updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Filament'
+ *   delete:
+ *     summary: Delete a filament
+ *     tags: [Filaments]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Filament deleted
+ */
 app.put('/api/filaments/:id', authenticateToken, (req, res) => {
-    const { remaining_weight, material, color_name, color, brand, total_weight, price, supplier_id } = req.body;
+    const { remaining_weight, material, color_name, color, brand, total_weight, price, supplier_id, location, notes, tare_weight } = req.body;
     const filamentId = req.params.id;
 
     // Build dynamic update
@@ -208,6 +459,9 @@ app.put('/api/filaments/:id', authenticateToken, (req, res) => {
     if (total_weight !== undefined) { fields.push('total_weight = ?'); values.push(total_weight); }
     if (price !== undefined) { fields.push('price = ?'); values.push(price); }
     if (supplier_id !== undefined) { fields.push('supplier_id = ?'); values.push(supplier_id || null); }
+    if (location !== undefined) { fields.push('location = ?'); values.push(location || null); }
+    if (notes !== undefined) { fields.push('notes = ?'); values.push(notes || null); }
+    if (tare_weight !== undefined) { fields.push('tare_weight = ?'); values.push(tare_weight || 0); }
 
     if (fields.length === 0) {
         return res.status(400).json({ error: 'No fields to update' });
@@ -226,9 +480,9 @@ app.put('/api/filaments/:id', authenticateToken, (req, res) => {
                 return res.status(404).json({ error: 'Filament not found' });
             }
 
-            db.get('SELECT f.*, u.alert_email FROM filaments f JOIN users u ON f.user_id = u.id WHERE f.id = ?', [filamentId], (err, row) => {
+            db.get('SELECT f.*, u.alert_email, u.low_stock_threshold FROM filaments f JOIN users u ON f.user_id = u.id WHERE f.id = ?', [filamentId], (err, row) => {
                 if (!err && row) {
-                    const threshold = parseInt(process.env.LOW_FILAMENT_THRESHOLD) || 200;
+                    const threshold = row.low_stock_threshold || parseInt(process.env.LOW_FILAMENT_THRESHOLD) || 200;
                     if (row.remaining_weight <= threshold) {
                         sendLowFilamentAlert(row, row.remaining_weight, row.alert_email);
                     }
@@ -681,7 +935,138 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'ok' });
 });
 
-// QR Code endpoint
+/**
+ * @openapi
+ * /qr/batch:
+ *   get:
+ *     summary: Generate a PDF with QR codes for all user's filaments
+ *     tags: [QR Codes]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: PDF file with QR codes
+ *         content:
+ *           application/pdf:
+ *             schema:
+ *               type: string
+ *               format: binary
+ */
+app.get('/api/qr/batch', authenticateToken, async (req, res) => {
+    try {
+        // Get all filaments for the user
+        const filaments = await new Promise((resolve, reject) => {
+            db.all(
+                'SELECT * FROM filaments WHERE user_id = ? ORDER BY brand, material, color_name',
+                [req.user.userId],
+                (err, rows) => {
+                    if (err) reject(err);
+                    else resolve(rows);
+                }
+            );
+        });
+
+        if (filaments.length === 0) {
+            return res.status(404).json({ error: 'No filaments found' });
+        }
+
+        // Create PDF
+        const doc = new PDFDocument({ margin: 30 });
+        
+        // Set response headers
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', 'attachment; filename="filament-qr-codes.pdf"');
+        
+        // Pipe PDF to response
+        doc.pipe(res);
+
+        // PDF title
+        doc.fontSize(20).text('Filament QR Codes', 30, 30);
+        doc.fontSize(10).text(`Generated: ${new Date().toLocaleDateString()}`, 30, 55);
+        doc.moveDown(2);
+
+        // Layout settings
+        const qrSize = 100;
+        const cols = 3;
+        const rows = 5;
+        const colWidth = 180;
+        const rowHeight = 140;
+        const startX = 30;
+        const startY = 80;
+        
+        let x = startX;
+        let y = startY;
+        let count = 0;
+
+        for (const filament of filaments) {
+            // Check if we need a new page
+            if (count > 0 && count % (cols * rows) === 0) {
+                doc.addPage();
+                x = startX;
+                y = startY;
+            }
+
+            // Generate QR code
+            const baseUrl = `${req.protocol}://${req.get('host')}`;
+            const qrUrl = `${baseUrl}/spool/${filament.id}`;
+            const qrBuffer = await QRCode.toBuffer(qrUrl, {
+                type: 'png',
+                width: 200,
+                margin: 1,
+                color: {
+                    dark: '#000000',
+                    light: '#ffffff'
+                }
+            });
+
+            // Draw QR code
+            doc.image(qrBuffer, x, y, { width: qrSize, height: qrSize });
+
+            // Draw filament info
+            doc.fontSize(8);
+            doc.text(`${filament.brand}`, x + qrSize + 5, y + 10, { width: colWidth - qrSize - 10 });
+            doc.fontSize(7);
+            doc.text(`${filament.material} - ${filament.color_name}`, x + qrSize + 5, y + 25, { width: colWidth - qrSize - 10 });
+            doc.text(`ID: ${filament.id}`, x + qrSize + 5, y + 40, { width: colWidth - qrSize - 10 });
+
+            // Move to next position
+            count++;
+            if (count % cols === 0) {
+                x = startX;
+                y += rowHeight;
+            } else {
+                x += colWidth;
+            }
+        }
+
+        doc.end();
+    } catch (error) {
+        console.error('Batch QR generation error:', error);
+        res.status(500).json({ error: 'Failed to generate QR batch PDF' });
+    }
+});
+
+/**
+ * @openapi
+ * /qr/{id}:
+ *   get:
+ *     summary: Get QR code for a specific filament
+ *     tags: [QR Codes]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: QR code image (PNG)
+ *         content:
+ *           image/png:
+ *             schema:
+ *               type: string
+ *               format: binary
+ */
 app.get('/api/qr/:id', (req, res) => {
     const { id } = req.params;
     db.get('SELECT * FROM filaments WHERE id = ?', [id], async (err, filament) => {
@@ -717,6 +1102,22 @@ app.get('/api/qr/:id', (req, res) => {
     });
 });
 
+/**
+ * @openapi
+ * /spool/{id}:
+ *   get:
+ *     summary: Public spool page for QR code scanning
+ *     tags: [Public]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: HTML page with spool details
+ */
 // Spool page (public view for QR code scanning)
 app.get('/spool/:id', (req, res) => {
     const { id } = req.params;
@@ -746,11 +1147,14 @@ app.get('/spool/:id', (req, res) => {
         .details span { color: #00d4aa; }
         .btn { display: inline-block; margin-top: 1.5rem; padding: 0.6rem 1.2rem; background: rgba(0,212,170,0.15); border: 1px solid rgba(0,212,170,0.3); border-radius: 8px; color: #00d4aa; text-decoration: none; font-size: 0.8rem; transition: all 0.2s; }
         .btn:hover { background: rgba(0,212,170,0.25); }
+        .notes-section { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1); text-align: left; }
+        .notes-label { font-size: 0.7rem; color: #888; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.25rem; }
+        .notes-text { font-size: 0.8rem; color: #ccc; line-height: 1.5; white-space: pre-wrap; }
     </style>
 </head>
 <body>
     <div class="card">
-        <div class="color-badge" style="background: ${filament.color_hex || '#888'};"></div>
+        <div class="color-badge" style="background: ${filament.color};"></div>
         <h1>${filament.brand} ${filament.material}</h1>
         <div class="meta">${filament.color_name} — Spool #${filament.id}</div>
         <div class="weight-bar"><div class="weight-fill" style="width: ${Math.round((filament.remaining_weight / filament.total_weight) * 100)}%;"></div></div>
@@ -762,7 +1166,14 @@ app.get('/spool/:id', (req, res) => {
             Diameter: <span>${filament.diameter || '1.75'}mm</span><br>
             ${filament.price ? `Price: <span>€${Number(filament.price).toFixed(2)}</span><br>` : ''}
             ${filament.location ? `Location: <span>${filament.location}</span><br>` : ''}
+            ${filament.tare_weight ? `Tare Weight: <span>${Number(filament.tare_weight).toFixed(0)}g</span><br>` : ''}
         </div>
+        ${filament.notes ? `
+        <div class="notes-section">
+            <div class="notes-label">Notes</div>
+            <div class="notes-text">${filament.notes}</div>
+        </div>
+        ` : ''}
         <a href="/" class="btn">Open Dashboard</a>
     </div>
 </body>

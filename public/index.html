@@ -2179,7 +2179,7 @@
 
     <!-- Printer Management Modal -->
     <div id="printerModal" class="modal-overlay" onclick="if(event.target===this)closePrinterModal()">
-        <div class="modal" style="max-width: 500px;">
+        <div class="modal" style="max-width: 550px; max-height: 80vh; overflow-y: auto;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                 <h3 style="margin: 0;">🖨️ Printers</h3>
                 <button class="close-history" onclick="closePrinterModal()" style="border: none; background: none;">
@@ -2189,16 +2189,21 @@
                     </svg>
                 </button>
             </div>
-            <div id="printerList" style="margin-bottom: 1rem;"></div>
-            <div style="display: flex; gap: 0.5rem;">
-                <input type="text" id="newPrinterName" placeholder="Printer name" style="flex: 1; background: var(--bg-dark); border: 2px solid var(--border); border-radius: 4px; padding: 0.5rem; color: var(--text-primary); font-family: 'Space Mono', monospace; font-size: 0.8rem;">
-                <input type="text" id="newPrinterModel" placeholder="Model (optional)" style="flex: 1; background: var(--bg-dark); border: 2px solid var(--border); border-radius: 4px; padding: 0.5rem; color: var(--text-primary); font-family: 'Space Mono', monospace; font-size: 0.8rem;">
-                <select id="newPrinterType" style="width: 80px; background: var(--bg-dark); border: 2px solid var(--border); border-radius: 4px; padding: 0.5rem; color: var(--text-primary); font-family: 'Space Mono', monospace; font-size: 0.8rem;">
-                    <option value="FDM">FDM</option>
-                    <option value="SLA">SLA</option>
-                    <option value="SLS">SLS</option>
-                </select>
-                <button class="btn" onclick="addPrinter()" style="width: auto; padding: 0.5rem 1rem; font-size: 0.8rem;">Add</button>
+            <div id="printerList" style="margin-bottom: 1.5rem;"></div>
+            <div style="border-top: 1px solid var(--border); padding-top: 1rem;">
+                <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.75rem;">Add New Printer</div>
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+                    <input type="text" id="newPrinterName" placeholder="Printer name" style="flex: 1; background: var(--bg-dark); border: 2px solid var(--border); border-radius: 4px; padding: 0.6rem 0.75rem; color: var(--text-primary); font-family: 'Space Mono', monospace; font-size: 0.85rem;">
+                    <select id="newPrinterType" style="width: 90px; background: var(--bg-dark); border: 2px solid var(--border); border-radius: 4px; padding: 0.6rem; color: var(--text-primary); font-family: 'Space Mono', monospace; font-size: 0.85rem;">
+                        <option value="FDM">FDM</option>
+                        <option value="SLA">SLA</option>
+                        <option value="SLS">SLS</option>
+                    </select>
+                </div>
+                <div style="display: flex; gap: 0.5rem;">
+                    <input type="text" id="newPrinterModel" placeholder="Model (optional)" style="flex: 1; background: var(--bg-dark); border: 2px solid var(--border); border-radius: 4px; padding: 0.6rem 0.75rem; color: var(--text-primary); font-family: 'Space Mono', monospace; font-size: 0.85rem;">
+                    <button class="btn" onclick="addPrinter()" style="padding: 0.6rem 1.5rem; font-size: 0.9rem; white-space: nowrap;">+ Add Printer</button>
+                </div>
             </div>
         </div>
     </div>

@@ -3106,25 +3106,15 @@
             const container = document.getElementById('qrCodeContainer');
             const info = document.getElementById('qrSpoolInfo');
 
-            const qrData = JSON.stringify({
-                id: f.id,
-                material: f.material,
-                brand: f.brand,
-                color_name: f.color_name,
-                color: f.color,
-                total_weight: f.total_weight,
-                remaining_weight: f.remaining_weight,
-                price: f.price
-            });
-
-            // Generate QR using canvas
-            container.innerHTML = '';
-            const canvas = document.createElement('canvas');
-            container.appendChild(canvas);
-            generateQR(canvas, qrData);
+            const qrUrl = `${window.location.origin}/spool/${f.id}`;
+            const qrImgUrl = `${window.location.origin}/api/qr/${f.id}`;
+            
+            // Show QR image from server
+            container.innerHTML = `<img src="${qrImgUrl}" alt="QR Code" style="width: 256px; height: 256px; display: block;" crossorigin="anonymous" />`;
 
             info.innerHTML = `<strong>${f.brand}</strong> ${f.material} — ${f.color_name}<br>
-                ${Number(f.remaining_weight).toFixed(0)}g / ${Number(f.total_weight).toFixed(0)}g remaining`;
+                ${Number(f.remaining_weight).toFixed(0)}g / ${Number(f.total_weight).toFixed(0)}g remaining<br>
+                <span style="font-size: 0.7rem; color: var(--accent);">${qrUrl}</span>`;
 
             document.getElementById('qrModal').classList.add('active');
         }
@@ -3134,71 +3124,14 @@
         }
 
         function downloadQR() {
-            const canvas = document.querySelector('#qrCodeContainer canvas');
-            if (!canvas) return;
+            if (!currentQRFilament) return;
+            const qrImgUrl = `${window.location.origin}/api/qr/${currentQRFilament.id}`;
             const a = document.createElement('a');
-            a.href = canvas.toDataURL('image/png');
-            a.download = `spool-qr-${currentQRFilament?.id || 'unknown'}.png`;
+            a.href = qrImgUrl;
+            a.download = `spool-qr-${currentQRFilament.id}.png`;
+            document.body.appendChild(a);
             a.click();
-        }
-
-        // Simple QR code generator (minimal, no external dependency)
-        function generateQR(canvas, text) {
-            const size = 200;
-            canvas.width = size;
-            canvas.height = size;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, size, size);
-            ctx.fillStyle = 'black';
-
-            // Simple visual representation - encode as a grid pattern based on hash
-            const gridSize = 20;
-            const cellSize = size / gridSize;
-            const hash = simpleHash(text);
-
-            for (let y = 0; y < gridSize; y++) {
-                for (let x = 0; x < gridSize; x++) {
-                    // Position markers (corners)
-                    if ((x < 4 && y < 4) || (x >= gridSize - 4 && y < 4) || (x < 4 && y >= gridSize - 4)) {
-                        const inBorder = x === 0 || y === 0 || x === gridSize - 1 || y === gridSize - 1 ||
-                                        (x < 4 && y < 4 && (x === 3 || y === 3 || x === 0 || y === 0)) ||
-                                        (x >= gridSize - 4 && y < 4 && (x === gridSize - 4 || y === 3 || x === gridSize - 1 || y === 0)) ||
-                                        (x < 4 && y >= gridSize - 4 && (x === 3 || y === gridSize - 4 || x === 0 || y === gridSize - 1));
-                        const inInner = (x >= 1 && x <= 2 && y >= 1 && y <= 2) ||
-                                        (x >= gridSize - 3 && x <= gridSize - 2 && y >= 1 && y <= 2) ||
-                                        (x >= 1 && x <= 2 && y >= gridSize - 3 && y <= gridSize - 2);
-
-                        if (inBorder || inInner) {
-                            ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
-                        }
-                    } else {
-                        // Data area - use hash to determine pattern
-                        const idx = y * gridSize + x;
-                        if ((hash[idx % hash.length] + x * y) % 3 === 0) {
-                            ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
-                        }
-                    }
-                }
-            }
-
-            // Center info
-            ctx.fillStyle = '#333';
-            ctx.font = 'bold 10px monospace';
-            ctx.textAlign = 'center';
-            ctx.fillText('SPOOL', size / 2, size / 2 + 4);
-        }
-
-        function simpleHash(str) {
-            const arr = [];
-            for (let i = 0; i < str.length; i++) {
-                arr.push(str.charCodeAt(i));
-            }
-            // Pad to at least 400 elements
-            while (arr.length < 400) {
-                arr.push((arr[arr.length - 1] * 31 + arr[arr.length - 2] || 1) % 256);
-            }
-            return arr;
+            document.body.removeChild(a);
         }
 
         // ====== PRINTERS ======

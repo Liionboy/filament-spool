@@ -6,6 +6,7 @@ const cors = require('cors');
 const path = require('path');
 require('dotenv').config();
 const { sendLowFilamentAlert } = require('./email-service');
+const QRCode = require('qrcode');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -680,6 +681,95 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'ok' });
 });
 
+// QR Code endpoint
+app.get('/api/qr/:id', (req, res) => {
+    const { id } = req.params;
+    db.get('SELECT * FROM filaments WHERE id = ?', [id], async (err, filament) => {
+        if (err) {
+            return res.status(500).json({ error: 'Server error' });
+        }
+        if (!filament) {
+            return res.status(404).json({ error: 'Filament not found' });
+        }
+        try {
+            // Generate QR code with the spool URL
+            const baseUrl = `${req.protocol}://${req.get('host')}`;
+            const qrUrl = `${baseUrl}/spool/${filament.id}`;
+            const qrBuffer = await QRCode.toBuffer(qrUrl, {
+                type: 'png',
+                width: 256,
+                margin: 2,
+                color: {
+                    dark: '#000000',
+                    light: '#ffffff'
+                }
+            });
+            res.writeHead(200, {
+                'Content-Type': 'image/png',
+                'Content-Length': qrBuffer.length,
+                'Cache-Control': 'public, max-age=3600'
+            });
+            res.end(qrBuffer);
+        } catch (error) {
+            console.error('QR generation error:', error);
+            res.status(500).json({ error: 'Failed to generate QR code' });
+        }
+    });
+});
+
+// Spool page (public view for QR code scanning)
+app.get('/spool/:id', (req, res) => {
+    const { id } = req.params;
+    db.get('SELECT * FROM filaments WHERE id = ?', [id], (err, filament) => {
+        if (err || !filament) {
+            return res.status(404).send('<html><body style="background:#1a1a2e;color:#e0e0e0;font-family:monospace;display:flex;justify-content:center;align-items:center;height:100vh;"><div style="text-align:center;"><h2>Spool not found</h2><p>The spool you are looking for does not exist.</p><a href="/" style="color:#00d4aa;">Go to Dashboard</a></div></body></html>');
+        }
+        res.send(`<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${filament.brand} ${filament.material} - ${filament.color_name} | SPOOL</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0f0f1a; color: #e0e0e0; font-family: 'Space Mono', monospace; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; }
+        .card { background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 2rem; max-width: 400px; width: 100%; text-align: center; }
+        .color-badge { width: 60px; height: 60px; border-radius: 50%; margin: 0 auto 1rem; border: 3px solid rgba(255,255,255,0.2); }
+        h1 { font-size: 1.2rem; margin-bottom: 0.5rem; }
+        .meta { color: #888; font-size: 0.8rem; margin-bottom: 1.5rem; }
+        .weight-bar { background: rgba(255,255,255,0.1); border-radius: 8px; height: 12px; overflow: hidden; margin-bottom: 0.5rem; }
+        .weight-fill { height: 100%; background: linear-gradient(90deg, #00d4aa, #00ff88); border-radius: 8px; transition: width 0.3s; }
+        .weight-text { font-size: 0.9rem; margin-bottom: 1rem; }
+        .details { text-align: left; font-size: 0.8rem; line-height: 1.8; }
+        .details span { color: #00d4aa; }
+        .btn { display: inline-block; margin-top: 1.5rem; padding: 0.6rem 1.2rem; background: rgba(0,212,170,0.15); border: 1px solid rgba(0,212,170,0.3); border-radius: 8px; color: #00d4aa; text-decoration: none; font-size: 0.8rem; transition: all 0.2s; }
+        .btn:hover { background: rgba(0,212,170,0.25); }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="color-badge" style="background: ${filament.color_hex || '#888'};"></div>
+        <h1>${filament.brand} ${filament.material}</h1>
+        <div class="meta">${filament.color_name} — Spool #${filament.id}</div>
+        <div class="weight-bar"><div class="weight-fill" style="width: ${Math.round((filament.remaining_weight / filament.total_weight) * 100)}%;"></div></div>
+        <div class="weight-text">${Number(filament.remaining_weight).toFixed(0)}g / ${Number(filament.total_weight).toFixed(0)}g remaining</div>
+        <div class="details">
+            <strong>Details:</strong><br>
+            Material: <span>${filament.material}</span><br>
+            Color: <span>${filament.color_name}</span><br>
+            Diameter: <span>${filament.diameter || '1.75'}mm</span><br>
+            ${filament.price ? `Price: <span>€${Number(filament.price).toFixed(2)}</span><br>` : ''}
+            ${filament.location ? `Location: <span>${filament.location}</span><br>` : ''}
+        </div>
+        <a href="/" class="btn">Open Dashboard</a>
+    </div>
+</body>
+</html>`);
+    });
+});
+
 // Serve frontend
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '../public/index.html'));
@@ -695,15 +785,4 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
     console.log(`API available at http://localhost:${PORT}/api`);
-});
-
-// Graceful shutdown
-process.on('SIGINT', () => {
-    db.close((err) => {
-        if (err) {
-            console.error(err.message);
-        }
-        console.log('Database connection closed');
-        process.exit(0);
-    });
 });

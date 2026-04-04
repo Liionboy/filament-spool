@@ -2459,10 +2459,22 @@
             } catch (err) {
                 console.error('[LOGIN] Error:', err);
                 console.error('[LOGIN] Message:', err.message);
-                const container = document.getElementById('toastContainer');
-                if (container) {
-                    showToast(err.message || 'Login failed', 'error');
-                } else {
+                
+                // Try to show toast, fallback to alert
+                try {
+                    const container = document.getElementById('toastContainer');
+                    if (container) {
+                        showToast(err.message || 'Login failed', 'error');
+                    } else {
+                        // Create toast manually if container exists but showToast fails
+                        const toast = document.createElement('div');
+                        toast.style.cssText = 'position:fixed;bottom:2rem;right:2rem;background:#1a1a1a;border:2px solid #ff3366;color:#e8e8e8;padding:1rem;border-radius:4px;z-index:9999;font-family:Space Mono,monospace;';
+                        toast.textContent = 'Invalid credentials';
+                        document.body.appendChild(toast);
+                        setTimeout(() => toast.remove(), 3000);
+                    }
+                } catch (e) {
+                    // Last resort: use alert
                     alert('Login Error: ' + (err.message || 'Invalid credentials'));
                 }
             }

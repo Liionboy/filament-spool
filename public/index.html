@@ -2751,7 +2751,7 @@
                         </div>
                         <div class="history-print">${print.name}</div>
                         ${filamentsHtml}
-                        ${print.cost ? `<div class="history-cost">€${print.cost.toFixed(2)}</div>` : ''}
+                        ${print.cost ? `<div class="history-cost">${formatPrice(print.cost)}</div>` : ''}
                     </div>
                 `;
             }).join('');
@@ -2928,7 +2928,7 @@
             });
 
             if (hasData) {
-                costValue.textContent = '€' + totalCost.toFixed(2);
+                costValue.textContent = formatPrice(totalCost);
                 costPreview.style.display = 'block';
             } else {
                 costPreview.style.display = 'none';
@@ -3098,7 +3098,7 @@
                                 <span class="weight-remaining">${Number(f.remaining_weight).toFixed(2)}g remaining</span>
                                 <span>${Math.round(percentage)}%</span>
                             </div>
-                            ${f.price ? `<div class="spool-cost">${formatPrice(f.price)} total · <span>€${costPerGram}/g</span></div>` : ''}
+                            ${f.price ? `<div class="spool-cost">${formatPrice(f.price)} total · <span>${formatPrice(costPerGram)}/g</span></div>` : ''}
                             ${f.location ? `<div style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 2px;">📍 ${f.location}</div>` : ''}
                             ${f.notes ? `<div style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${f.notes.replace(/"/g, '&quot;')}">📝 ${f.notes}</div>` : ''}
                             <div style="margin-top: 4px;">
@@ -3302,7 +3302,7 @@
                 const height = Math.max(2, (cost / maxCost) * 100);
                 return `
                     <div class="cost-bar-wrapper">
-                        <div class="cost-bar-value">${cost > 0 ? '€' + cost.toFixed(0) : ''}</div>
+                        <div class="cost-bar-value">${cost > 0 ? formatPrice(cost) : ''}</div>
                         <div class="cost-bar" style="height: ${height}%"></div>
                         <div class="cost-bar-label">${monthNames[month]}</div>
                     </div>
@@ -3627,10 +3627,10 @@
             const totalCost = filamentCost + electricityCost;
             const costPerGram = weight > 0 ? totalCost / weight : 0;
 
-            document.getElementById('calcFilamentCost').textContent = `€${filamentCost.toFixed(2)}`;
-            document.getElementById('calcElectricityCost').textContent = `€${electricityCost.toFixed(2)}`;
-            document.getElementById('calcTotalCost').textContent = `€${totalCost.toFixed(2)}`;
-            document.getElementById('calcCostPerGram').textContent = `€${costPerGram.toFixed(3)}`;
+            document.getElementById('calcFilamentCost').textContent = formatPrice(filamentCost);
+            document.getElementById('calcElectricityCost').textContent = formatPrice(electricityCost);
+            document.getElementById('calcTotalCost').textContent = formatPrice(totalCost);
+            document.getElementById('calcCostPerGram').textContent = formatPrice(costPerGram);
             document.getElementById('calcRemaining').textContent = remaining;
             document.getElementById('calcRemaining').style.color = remaining.includes('⚠️') ? 'var(--danger)' : 'var(--text-primary)';
         }

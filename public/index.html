@@ -4033,10 +4033,12 @@
 
         function formatPrice(eurPrice) {
             if (!eurPrice && eurPrice !== 0) return '';
+            const price = Number(eurPrice);
+            if (isNaN(price)) return '';
             if (userCurrency === 'RON') {
-                return (eurPrice * userExchangeRate).toFixed(2) + ' lei';
+                return (price * userExchangeRate).toFixed(2) + ' lei';
             }
-            return '€' + eurPrice.toFixed(2);
+            return '€' + price.toFixed(2);
         }
 
         // --- LOW STOCK WIDGET ---

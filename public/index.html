@@ -2483,8 +2483,11 @@
                 renderBrandChips();
                 
                 // Load settings FIRST to get currency preference
+                console.log('[LOAD] Loading settings...');
                 await loadSettings();
+                console.log('[LOAD] Settings loaded');
                 
+                console.log('[LOAD] Rendering...');
                 render();
                 renderPagination();
                 renderHistory();
@@ -2494,8 +2497,10 @@
                 updateStatsFromResponse(stats);
                 updateLowStockWidget();
                 renderComparisonPanel();
+                console.log('[LOAD] Done');
             } catch (err) {
-                showToast('Failed to load data', 'error');
+                console.error('[LOAD] Error:', err);
+                showToast('Failed to load data: ' + err.message, 'error');
             }
         }
 

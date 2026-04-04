@@ -2481,6 +2481,10 @@
                 suppliers = sups;
 
                 renderBrandChips();
+                
+                // Load settings FIRST to get currency preference
+                await loadSettings();
+                
                 render();
                 renderPagination();
                 renderHistory();
@@ -2488,7 +2492,6 @@
                 updateSupplierSelects();
                 checkPushSubscription();
                 updateStatsFromResponse(stats);
-                await loadSettings();
                 updateLowStockWidget();
                 renderComparisonPanel();
             } catch (err) {

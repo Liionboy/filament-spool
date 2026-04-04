@@ -3786,10 +3786,18 @@
                     }
 
                     console.log('[PUSH DEBUG] Attempting pushManager.subscribe...');
-                    pushSubscription = await reg.pushManager.subscribe({
+                    
+                    // Add timeout to prevent hanging
+                    const subscribePromise = reg.pushManager.subscribe({
                         userVisibleOnly: true,
                         applicationServerKey: urlBase64ToUint8Array(publicKey)
                     });
+                    
+                    const timeoutPromise = new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error('Push subscription timed out after 10s. Push service may be unreachable.')), 10000)
+                    );
+                    
+                    pushSubscription = await Promise.race([subscribePromise, timeoutPromise]);
                     console.log('[PUSH DEBUG] Subscription successful:', pushSubscription);
 
                     console.log('[PUSH DEBUG] Sending subscription to server...');

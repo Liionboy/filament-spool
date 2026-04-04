@@ -4242,12 +4242,15 @@
             if (!quickSelect) return;
             
             const newCurrency = quickSelect.value;
+            console.log('[CURRENCY] Changing to:', newCurrency);
+            
             try {
                 // Update settings on server
-                await apiFetch('/user/settings', {
+                const resp = await apiFetch('/user/settings', {
                     method: 'PUT',
                     body: JSON.stringify({ currency: newCurrency })
                 });
+                console.log('[CURRENCY] Server response:', resp);
                 
                 // Update local state
                 userCurrency = newCurrency;
@@ -4260,7 +4263,8 @@
                 
                 showToast(`Currency changed to ${newCurrency}`, 'success');
             } catch (err) {
-                showToast('Failed to save currency preference', 'error');
+                console.error('[CURRENCY] Error:', err);
+                showToast('Failed to save currency preference: ' + err.message, 'error');
             }
         }
 

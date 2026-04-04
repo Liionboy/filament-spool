@@ -2554,8 +2554,16 @@
             document.getElementById('statTotalWeight').textContent = stats.totalWeight >= 1000
                 ? (stats.totalWeight / 1000).toFixed(2) + 'kg'
                 : stats.totalWeight + 'g';
-            document.getElementById('statTotalValue').textContent = '€' + stats.totalValue.toFixed(0);
-            document.getElementById('statTotalSpent').textContent = '€' + stats.totalSpent.toFixed(0);
+            
+            // Use user currency preference
+            const currencySymbol = userCurrency === 'RON' ? 'lei' : '€';
+            const exchangeRate = userCurrency === 'RON' ? (userExchangeRate || 5.0) : 1;
+            
+            const totalValueRON = stats.totalValue * exchangeRate;
+            const totalSpentRON = stats.totalSpent * exchangeRate;
+            
+            document.getElementById('statTotalValue').textContent = currencySymbol + totalValueRON.toFixed(0);
+            document.getElementById('statTotalSpent').textContent = currencySymbol + totalSpentRON.toFixed(0);
             document.getElementById('statMaterialTypes').textContent = stats.materialTypes;
         }
 

@@ -2457,7 +2457,9 @@
                 showApp();
                 showToast('Welcome back!', 'success');
             } catch (err) {
-                showToast(err.message, 'error');
+                console.error('[LOGIN] Error:', err);
+                console.error('[LOGIN] Message:', err.message);
+                showToast(err.message || 'Login failed', 'error');
             }
         });
 

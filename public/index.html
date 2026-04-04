@@ -3721,8 +3721,23 @@
         let pushSubscription = null;
 
         async function togglePushNotifications() {
-            if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-                showToast('Push notifications not supported in this browser', 'warning');
+            // Check for push support with detailed messaging
+            const hasServiceWorker = 'serviceWorker' in navigator;
+            const hasPushManager = 'PushManager' in window;
+            const isHTTPS = window.location.protocol === 'https:' || window.location.hostname === 'localhost';
+
+            if (!hasServiceWorker) {
+                showToast('Service Workers not available. Try using Chrome/Edge or ensure you\'re on HTTPS/localhost.', 'warning');
+                return;
+            }
+            
+            if (!hasPushManager) {
+                showToast('Push API not available in this browser. Try Chrome or Edge for push notifications.', 'warning');
+                return;
+            }
+            
+            if (!isHTTPS) {
+                showToast('Push notifications require HTTPS. Please access via https:// or localhost.', 'warning');
                 return;
             }
 

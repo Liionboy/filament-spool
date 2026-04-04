@@ -2424,7 +2424,10 @@
                 headers
             });
 
-            if (response.status === 401 || response.status === 403) {
+            // Don't auto-logout on login/register attempts
+            const isAuthEndpoint = endpoint.includes('/auth/');
+            
+            if (!isAuthEndpoint && (response.status === 401 || response.status === 403)) {
                 logout();
                 throw new Error('Session expired');
             }

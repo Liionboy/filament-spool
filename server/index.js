@@ -322,14 +322,43 @@ app.put('/api/user/settings', authenticateToken, (req, res) => {
  *                 $ref: '#/components/schemas/Filament'
  */
 app.get('/api/filaments', authenticateToken, (req, res) => {
-    db.all(
-        'SELECT * FROM filaments WHERE user_id = ? ORDER BY created_at DESC',
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const offset = (page - 1) * limit;
+
+    // Get total count for pagination
+    db.get(
+        'SELECT COUNT(*) as total FROM filaments WHERE user_id = ?',
         [req.user.userId],
-        (err, rows) => {
+        (err, countResult) => {
             if (err) {
-                return res.status(500).json({ error: 'Failed to fetch filaments' });
+                return res.status(500).json({ error: 'Failed to fetch filament count' });
             }
-            res.json(rows);
+
+            const totalItems = countResult.total;
+            const totalPages = Math.ceil(totalItems / limit);
+
+            // Get paginated data
+            db.all(
+                'SELECT * FROM filaments WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
+                [req.user.userId, limit, offset],
+                (err, rows) => {
+                    if (err) {
+                        return res.status(500).json({ error: 'Failed to fetch filaments' });
+                    }
+                    res.json({
+                        data: rows,
+                        pagination: {
+                            page,
+                            limit,
+                            totalItems,
+                            totalPages,
+                            hasNext: page < totalPages,
+                            hasPrev: page > 1
+                        }
+                    });
+                }
+            );
         }
     );
 });

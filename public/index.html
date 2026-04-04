@@ -3721,25 +3721,39 @@
         let pushSubscription = null;
 
         async function togglePushNotifications() {
+            // Debug logging
+            console.log('[PUSH DEBUG] Checking push support...');
+            console.log('[PUSH DEBUG] Protocol:', window.location.protocol);
+            console.log('[PUSH DEBUG] Hostname:', window.location.hostname);
+            console.log('[PUSH DEBUG] Has ServiceWorker:', 'serviceWorker' in navigator);
+            console.log('[PUSH DEBUG] Has PushManager:', 'PushManager' in window);
+            
             // Check for push support with detailed messaging
             const hasServiceWorker = 'serviceWorker' in navigator;
             const hasPushManager = 'PushManager' in window;
-            const isHTTPS = window.location.protocol === 'https:' || window.location.hostname === 'localhost';
+            const isHTTPS = window.location.protocol === 'https:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+            console.log('[PUSH DEBUG] Is HTTPS/localhost:', isHTTPS);
 
             if (!hasServiceWorker) {
+                console.error('[PUSH DEBUG] ServiceWorker not available');
                 showToast('Service Workers not available. Try using Chrome/Edge or ensure you\'re on HTTPS/localhost.', 'warning');
                 return;
             }
             
             if (!hasPushManager) {
+                console.error('[PUSH DEBUG] PushManager not available');
                 showToast('Push API not available in this browser. Try Chrome or Edge for push notifications.', 'warning');
                 return;
             }
             
             if (!isHTTPS) {
+                console.error('[PUSH DEBUG] Not on HTTPS/localhost. Current protocol:', window.location.protocol);
                 showToast('Push notifications require HTTPS. Please access via https:// or localhost.', 'warning');
                 return;
             }
+            
+            console.log('[PUSH DEBUG] All checks passed, attempting subscription...');
 
             if (pushSubscription) {
                 // Unsubscribe
@@ -3755,24 +3769,35 @@
             } else {
                 // Subscribe
                 try {
+                    console.log('[PUSH DEBUG] Getting service worker ready...');
                     const reg = await navigator.serviceWorker.ready;
+                    console.log('[PUSH DEBUG] Service worker ready:', reg);
+                    
+                    console.log('[PUSH DEBUG] Fetching VAPID key...');
                     const vapidResp = await fetch('/api/push/vapid-key');
+                    console.log('[PUSH DEBUG] VAPID response status:', vapidResp.status);
                     const { publicKey } = await vapidResp.json();
+                    console.log('[PUSH DEBUG] VAPID public key:', publicKey ? publicKey.substring(0, 20) + '...' : 'NULL');
 
                     if (!publicKey) {
+                        console.error('[PUSH DEBUG] No VAPID key configured');
                         showToast('Push notifications not configured on server. Set VAPID_PUBLIC_KEY in .env', 'warning');
                         return;
                     }
 
+                    console.log('[PUSH DEBUG] Attempting pushManager.subscribe...');
                     pushSubscription = await reg.pushManager.subscribe({
                         userVisibleOnly: true,
                         applicationServerKey: urlBase64ToUint8Array(publicKey)
                     });
+                    console.log('[PUSH DEBUG] Subscription successful:', pushSubscription);
 
+                    console.log('[PUSH DEBUG] Sending subscription to server...');
                     await apiFetch('/push/subscribe', {
                         method: 'POST',
                         body: JSON.stringify({ subscription: pushSubscription })
                     });
+                    console.log('[PUSH DEBUG] Server subscription saved');
 
                     updatePushBtn(true);
                     showToast('Push notifications enabled!', 'success');

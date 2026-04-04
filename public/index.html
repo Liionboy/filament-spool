@@ -1499,6 +1499,34 @@
             font-size: 0.8rem;
             margin-left: 1rem;
         }
+
+        /* Quick Currency Selector */
+        .currency-selector {
+            min-width: 120px;
+        }
+
+        .currency-select {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 0.5rem;
+            border-radius: 6px;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.9rem;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.2s;
+        }
+
+        .currency-select:hover {
+            border-color: var(--accent);
+        }
+
+        .currency-select:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(255, 107, 53, 0.2);
+        }
     </style>
 </head>
 
@@ -1624,6 +1652,15 @@
                     <div class="stat">
                         <div class="stat-value" id="statMaterialTypes">0</div>
                         <div class="stat-label">Materials</div>
+                    </div>
+                    
+                    <!-- Quick Currency Selector -->
+                    <div class="stat currency-selector">
+                        <select id="quickCurrencySelect" class="currency-select" onchange="quickCurrencyChange()">
+                            <option value="EUR">EUR (€)</option>
+                            <option value="RON">RON (lei)</option>
+                        </select>
+                        <div class="stat-label">Currency</div>
                     </div>
                 </div>
             </div>
@@ -4181,7 +4218,39 @@
                 userExchangeRate = settings.exchangeRate || 5.0;
                 userLowStockThreshold = settings.lowStockThreshold || 200;
                 setCurrency(userCurrency);
+                
+                // Sync quick currency selector
+                const quickSelect = document.getElementById('quickCurrencySelect');
+                if (quickSelect) quickSelect.value = userCurrency;
             } catch (err) { /* not critical */ }
+        }
+
+        // Quick currency change from dashboard
+        async function quickCurrencyChange() {
+            const quickSelect = document.getElementById('quickCurrencySelect');
+            if (!quickSelect) return;
+            
+            const newCurrency = quickSelect.value;
+            try {
+                // Update settings on server
+                await apiFetch('/user/settings', {
+                    method: 'PUT',
+                    body: JSON.stringify({ currency: newCurrency })
+                });
+                
+                // Update local state
+                userCurrency = newCurrency;
+                setCurrency(newCurrency);
+                
+                // Refresh stats and UI
+                await loadStats();
+                render();
+                renderComparisonPanel();
+                
+                showToast(`Currency changed to ${newCurrency}`, 'success');
+            } catch (err) {
+                showToast('Failed to save currency preference', 'error');
+            }
         }
 
         async function saveSettings(e) {

@@ -1536,6 +1536,7 @@
             <h1>SPOO<span>L</span></h1>
             <div id="loginView">
                 <form id="loginForm">
+                    <div id="loginError" style="display: none; background: rgba(255, 51, 102, 0.1); border: 2px solid #ff3366; color: #ff3366; padding: 0.75rem; border-radius: 4px; margin-bottom: 1rem; font-size: 0.85rem; text-align: center;"></div>
                     <div class="form-group">
                         <label>Username or Email</label>
                         <input type="text" id="loginUsername" required>
@@ -2443,6 +2444,11 @@
         // Auth Event Listeners
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            
+            // Hide previous error
+            const errorDiv = document.getElementById('loginError');
+            if (errorDiv) errorDiv.style.display = 'none';
+            
             try {
                 const username = document.getElementById('loginUsername').value;
                 const password = document.getElementById('loginPassword').value;
@@ -2458,24 +2464,11 @@
                 showToast('Welcome back!', 'success');
             } catch (err) {
                 console.error('[LOGIN] Error:', err);
-                console.error('[LOGIN] Message:', err.message);
-                
-                // Try to show toast, fallback to alert
-                try {
-                    const container = document.getElementById('toastContainer');
-                    if (container) {
-                        showToast(err.message || 'Login failed', 'error');
-                    } else {
-                        // Create toast manually if container exists but showToast fails
-                        const toast = document.createElement('div');
-                        toast.style.cssText = 'position:fixed;bottom:2rem;right:2rem;background:#1a1a1a;border:2px solid #ff3366;color:#e8e8e8;padding:1rem;border-radius:4px;z-index:9999;font-family:Space Mono,monospace;';
-                        toast.textContent = 'Invalid credentials';
-                        document.body.appendChild(toast);
-                        setTimeout(() => toast.remove(), 3000);
-                    }
-                } catch (e) {
-                    // Last resort: use alert
-                    alert('Login Error: ' + (err.message || 'Invalid credentials'));
+                // Show error message in login form
+                const errorDiv = document.getElementById('loginError');
+                if (errorDiv) {
+                    errorDiv.textContent = err.message || 'Invalid credentials';
+                    errorDiv.style.display = 'block';
                 }
             }
         });

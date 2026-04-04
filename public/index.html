@@ -703,6 +703,32 @@
             animation: pulse 2s infinite;
         }
 
+        /* Transparent filament badge */
+        .transparent-badge {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background: rgba(100, 200, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(100, 200, 255, 0.4);
+            color: #64c8ff;
+            font-size: 0.65rem;
+            font-weight: 700;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            z-index: 10;
+        }
+
+        /* Transparent filament visual effect */
+        .spool-card.transparent-filament .filament-wind {
+            opacity: 0.4 !important;
+            stroke-width: 2 !important;
+        }
+
+        .spool-card.transparent-filament .spool-svg {
+            filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.3));
+        }
+
         @keyframes pulse {
 
             0%,
@@ -1946,6 +1972,7 @@
                     <div class="filter-chip" data-filter="ABS">ABS</div>
                     <div class="filter-chip" data-filter="TPU">TPU</div>
                     <div class="filter-chip" data-filter="OTHER">Other</div>
+                    <div class="filter-chip" data-filter="transparent" style="border-color: #64c8ff; color: #64c8ff;">🔍 Transparent</div>
                 </div>
 
                 <div class="search-bar">
@@ -2985,6 +3012,15 @@
                 if (currentFilter === 'OTHER') {
                     const known = ['PLA', 'PLA+', 'ABS', 'PETG', 'TPU'];
                     result = result.filter(f => !known.includes(f.material));
+                } else if (currentFilter === 'transparent') {
+                    // Filter for transparent filaments
+                    result = result.filter(f => 
+                        f.color_name && (
+                            f.color_name.toLowerCase().includes('transparent') ||
+                            f.color_name.toLowerCase().includes('clear') ||
+                            f.color_name.toLowerCase().includes('natural')
+                        )
+                    );
                 } else {
                     result = result.filter(f => f.material === currentFilter);
                 }
@@ -3081,10 +3117,18 @@
                 const percentage = (f.remaining_weight / f.total_weight) * 100;
                 const isLowStock = percentage < 20;
                 const costPerGram = f.price ? (f.price / f.total_weight).toFixed(3) : null;
+                
+                // Detect transparent filaments
+                const isTransparent = f.color_name && (
+                    f.color_name.toLowerCase().includes('transparent') ||
+                    f.color_name.toLowerCase().includes('clear') ||
+                    f.color_name.toLowerCase().includes('natural')
+                );
 
                 return `
-                    <div class="spool-card ${isLowStock ? 'low-stock' : ''}" style="--filament-color: ${f.color}">
+                    <div class="spool-card ${isLowStock ? 'low-stock' : ''} ${isTransparent ? 'transparent-filament' : ''}" style="--filament-color: ${f.color}">
                         ${isLowStock ? '<div class="low-stock-badge">Low Stock</div>' : ''}
+                        ${isTransparent ? '<div class="transparent-badge">🔍 Transparent</div>' : ''}
                         <div class="spool-visual">
                             <svg class="spool-svg" viewBox="0 0 130 130">
                                 <!-- Spool body -->

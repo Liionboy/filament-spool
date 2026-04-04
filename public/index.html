@@ -2553,7 +2553,7 @@
             document.getElementById('statTotalSpools').textContent = stats.totalSpools;
             document.getElementById('statTotalWeight').textContent = stats.totalWeight >= 1000
                 ? (stats.totalWeight / 1000).toFixed(2) + 'kg'
-                : stats.totalWeight + 'g';
+                : Number(stats.totalWeight).toFixed(2) + 'g';
             
             // Use user currency preference
             const currencySymbol = userCurrency === 'RON' ? 'lei' : '€';

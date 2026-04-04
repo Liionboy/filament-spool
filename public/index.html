@@ -1912,8 +1912,8 @@
                 <!-- Currency Toggle -->
                 <div style="display: flex; justify-content: flex-end; margin-bottom: 1rem;">
                     <div style="display: flex; align-items: center; gap: 0.5rem; background: var(--bg-panel); border: 2px solid var(--border); border-radius: 4px; padding: 0.25rem;">
-                        <button id="currencyEUR" class="currency-btn active" onclick="setCurrency('EUR')" style="padding: 0.4rem 0.75rem; border: none; background: var(--accent); color: var(--bg-dark); font-family: 'Space Mono', monospace; font-size: 0.75rem; font-weight: 700; border-radius: 3px; cursor: pointer;">EUR</button>
-                        <button id="currencyRON" class="currency-btn" onclick="setCurrency('RON')" style="padding: 0.4rem 0.75rem; border: none; background: transparent; color: var(--text-secondary); font-family: 'Space Mono', monospace; font-size: 0.75rem; cursor: pointer;">RON</button>
+                        <button id="currencyEUR" class="currency-btn" onclick="setCurrency('EUR')" style="padding: 0.4rem 0.75rem; border: none; background: transparent; color: var(--text-secondary); font-family: 'Space Mono', monospace; font-size: 0.75rem; cursor: pointer;">EUR</button>
+                        <button id="currencyRON" class="currency-btn active" onclick="setCurrency('RON')" style="padding: 0.4rem 0.75rem; border: none; background: var(--accent); color: var(--bg-dark); font-family: 'Space Mono', monospace; font-size: 0.75rem; font-weight: 700; border-radius: 3px; cursor: pointer;">RON</button>
                     </div>
                 </div>
 
@@ -2857,7 +2857,7 @@
         settingsForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const alertEmail = alertEmailInput.value;
-            const currency = document.getElementById('currencyInput')?.value || 'EUR';
+            const currency = document.getElementById('currencyInput')?.value || 'RON';
             const exchangeRate = parseFloat(document.getElementById('exchangeRateInput')?.value) || 5.0;
             const lowStockThreshold = parseInt(document.getElementById('lowStockThresholdInput')?.value) || 200;
 
@@ -4222,10 +4222,10 @@
             try {
                 const settings = await apiFetch('/user/settings');
                 document.getElementById('alertEmailInput').value = settings.alertEmail || '';
-                document.getElementById('currencyInput').value = settings.currency || 'EUR';
+                document.getElementById('currencyInput').value = settings.currency || 'RON';
                 document.getElementById('exchangeRateInput').value = settings.exchangeRate || 5.0;
                 document.getElementById('lowStockThresholdInput').value = settings.lowStockThreshold || 200;
-                userCurrency = settings.currency || 'EUR';
+                userCurrency = settings.currency || 'RON';
                 userExchangeRate = settings.exchangeRate || 5.0;
                 userLowStockThreshold = settings.lowStockThreshold || 200;
                 setCurrency(userCurrency);

@@ -303,6 +303,52 @@ app.put('/api/user/settings', authenticateToken, (req, res) => {
     });
 });
 
+// Change Password Endpoint
+app.put('/api/user/password', authenticateToken, async (req, res) => {
+    const { currentPassword, newPassword } = req.body;
+    
+    if (!currentPassword || !newPassword) {
+        return res.status(400).json({ error: 'Current and new password are required' });
+    }
+    
+    if (newPassword.length < 6) {
+        return res.status(400).json({ error: 'New password must be at least 6 characters' });
+    }
+    
+    try {
+        // Get current user
+        const user = await new Promise((resolve, reject) => {
+            db.get('SELECT * FROM users WHERE id = ?', [req.user.userId], (err, row) => {
+                if (err) reject(err);
+                else resolve(row);
+            });
+        });
+        
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        // Verify current password
+        const validPassword = await bcrypt.compare(currentPassword, user.password);
+        if (!validPassword) {
+            return res.status(401).json({ error: 'Current password is incorrect' });
+        }
+        
+        // Hash new password
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        
+        // Update password
+        db.run('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, req.user.userId], function (err) {
+            if (err) {
+                return res.status(500).json({ error: 'Failed to update password' });
+            }
+            res.json({ success: true, message: 'Password updated successfully' });
+        });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to change password' });
+    }
+});
+
 /**
  * @openapi
  * /filaments:

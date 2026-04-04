@@ -1613,6 +1613,27 @@
                     <input type="number" id="lowStockThresholdInput" placeholder="200" min="1" step="1" required>
                 </div>
 
+                <!-- Change Password Section -->
+                <hr style="border: none; border-top: 1px solid var(--border); margin: 2rem 0;">
+                <h4 style="margin: 0 0 1rem 0; color: var(--text-primary);">Change Password</h4>
+                
+                <div class="form-group">
+                    <label>Current Password</label>
+                    <input type="password" id="currentPasswordInput" placeholder="Enter current password">
+                </div>
+
+                <div class="form-group">
+                    <label>New Password</label>
+                    <input type="password" id="newPasswordInput" placeholder="Enter new password (min 6 characters)">
+                </div>
+
+                <div class="form-group">
+                    <label>Confirm New Password</label>
+                    <input type="password" id="confirmPasswordInput" placeholder="Confirm new password">
+                </div>
+
+                <button type="button" class="btn" onclick="changePassword()" style="background: var(--bg-card); border: 1px solid var(--accent); color: var(--accent); margin-bottom: 1rem;">Update Password</button>
+
                 <div style="display: flex; gap: 1rem; margin-top: 2rem;">
                     <button type="submit" class="btn">Save Settings</button>
                     <button type="button" class="btn btn-secondary" onclick="closeSettingsModal()">Cancel</button>
@@ -4272,6 +4293,44 @@
             } catch (err) {
                 console.error('[CURRENCY] Error:', err);
                 showToast('Failed to save currency preference: ' + err.message, 'error');
+            }
+        }
+
+        // Change Password function
+        async function changePassword() {
+            const currentPassword = document.getElementById('currentPasswordInput').value;
+            const newPassword = document.getElementById('newPasswordInput').value;
+            const confirmPassword = document.getElementById('confirmPasswordInput').value;
+
+            if (!currentPassword || !newPassword || !confirmPassword) {
+                showToast('Please fill in all password fields', 'error');
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                showToast('New passwords do not match', 'error');
+                return;
+            }
+
+            if (newPassword.length < 6) {
+                showToast('New password must be at least 6 characters', 'error');
+                return;
+            }
+
+            try {
+                await apiFetch('/user/password', {
+                    method: 'PUT',
+                    body: JSON.stringify({ currentPassword, newPassword })
+                });
+
+                // Clear password fields
+                document.getElementById('currentPasswordInput').value = '';
+                document.getElementById('newPasswordInput').value = '';
+                document.getElementById('confirmPasswordInput').value = '';
+
+                showToast('Password updated successfully!', 'success');
+            } catch (err) {
+                showToast(err.message || 'Failed to change password', 'error');
             }
         }
 

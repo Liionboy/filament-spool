@@ -2459,7 +2459,12 @@
             } catch (err) {
                 console.error('[LOGIN] Error:', err);
                 console.error('[LOGIN] Message:', err.message);
-                showToast(err.message || 'Login failed', 'error');
+                const container = document.getElementById('toastContainer');
+                if (container) {
+                    showToast(err.message || 'Login failed', 'error');
+                } else {
+                    alert('Login Error: ' + (err.message || 'Invalid credentials'));
+                }
             }
         });
 

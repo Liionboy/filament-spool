@@ -7,26 +7,158 @@
     <title>SPOOL | Filament Inventory</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link
-        href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Teko:wght@400;600;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Space+Mono:wght@400;700&family=Teko:wght@400;600;700&display=swap"
         rel="stylesheet">
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#ff6b35">
     <link rel="apple-touch-icon" href="/icons/icon-192.svg">
     <style>
-        :root {
+        /* Theme: Default (Orange) */
+        :root, [data-theme="default"] {
             --bg-dark: #0d0d0d;
             --bg-panel: #1a1a1a;
             --bg-card: #252525;
             --border: #333;
-            --text-primary: #e8e8e8;
-            --text-secondary: #888;
             --accent: #ff6b35;
             --success: #00d084;
             --danger: #ff3366;
             --warning: #ffc107;
+            --text-primary: #e8e8e8;
+            --text-secondary: #888;
+            --accent-glow: rgba(255, 107, 53, 0.3);
+            --font-family: 'Space Mono', monospace;
         }
 
+        /* Theme: Sci-Fi Cyan */
+        [data-theme="scifi"] {
+            --bg-dark: #0a0a0f;
+            --bg-panel: #111118;
+            --bg-card: #0d0d14;
+            --border: rgba(255, 255, 255, 0.1);
+            --accent: #00f0ff;
+            --success: #00ff9d;
+            --danger: #ff0040;
+            --warning: #ffaa00;
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --accent-glow: rgba(0, 240, 255, 0.3);
+            --font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Theme: Ollama Minimal */
+        [data-theme="ollama"] {
+            --bg-dark: #ffffff;
+            --bg-panel: #fafafa;
+            --bg-card: #f5f5f5;
+            --border: #e5e5e5;
+            --accent: #000000;
+            --success: #00d084;
+            --danger: #ff3366;
+            --warning: #ffc107;
+            --text-primary: #000000;
+            --text-secondary: #737373;
+            --accent-glow: rgba(0, 0, 0, 0.1);
+            --font-family: 'Space Mono', monospace;
+        }
+
+        /* Theme: Matrix Green */
+        [data-theme="matrix"] {
+            --bg-dark: #000000;
+            --bg-panel: #001100;
+            --bg-card: #002200;
+            --border: #004400;
+            --accent: #00ff00;
+            --success: #00ff00;
+            --danger: #ff0040;
+            --warning: #ffff00;
+            --text-primary: #00ff00;
+            --text-secondary: #008800;
+            --accent-glow: rgba(0, 255, 0, 0.3);
+            --font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Theme: Spotify Dark */
+        [data-theme="spotify"] {
+            --bg-dark: #121212;
+            --bg-panel: #181818;
+            --bg-card: #1f1f1f;
+            --border: #282828;
+            --accent: #1ed760;
+            --success: #1ed760;
+            --danger: #f3727f;
+            --warning: #ffa42b;
+            --text-primary: #ffffff;
+            --text-secondary: #b3b3b3;
+            --accent-glow: rgba(30, 215, 96, 0.3);
+            --font-family: 'Space Mono', monospace;
+        }
+
+        /* Theme: Vercel Minimal */
+        [data-theme="vercel"] {
+            --bg-dark: #ffffff;
+            --bg-panel: #fafafa;
+            --bg-card: #f5f5f5;
+            --border: rgba(0, 0, 0, 0.08);
+            --accent: #171717;
+            --success: #0075de;
+            --danger: #ff5b4f;
+            --warning: #ffa42b;
+            --text-primary: #171717;
+            --text-secondary: #666666;
+            --accent-glow: rgba(0, 0, 0, 0.05);
+            --font-family: 'Space Mono', monospace;
+        }
+
+        /* Theme: Notion Light */
+        [data-theme="notion"] {
+            --bg-dark: #ffffff;
+            --bg-panel: #f6f5f4;
+            --bg-card: #ffffff;
+            --border: rgba(0, 0, 0, 0.1);
+            --accent: #0075de;
+            --success: #0f7b6c;
+            --danger: #e03e3e;
+            --warning: #dfab01;
+            --text-primary: rgba(0, 0, 0, 0.95);
+            --text-secondary: #615d59;
+            --accent-glow: rgba(0, 117, 222, 0.1);
+            --font-family: 'Space Mono', monospace;
+        }
+
+        /* Theme: Linear Modern */
+        [data-theme="linear"] {
+            --bg-dark: #0a0a0b;
+            --bg-panel: #111113;
+            --bg-card: #161618;
+            --border: #232326;
+            --accent: #5e6ad2;
+            --success: #4caf50;
+            --danger: #f44336;
+            --warning: #ff9800;
+            --text-primary: #f5f5f7;
+            --text-secondary: #8b8b8d;
+            --accent-glow: rgba(94, 106, 210, 0.3);
+            --font-family: 'Space Mono', monospace;
+        }
+
+        /* Theme: Raycast Tool */
+        [data-theme="raycast"] {
+            --bg-dark: #07080a;
+            --bg-panel: #0c0d0f;
+            --bg-card: #121316;
+            --border: rgba(255, 255, 255, 0.1);
+            --accent: #ff6363;
+            --success: #5fc992;
+            --danger: #ff6363;
+            --warning: #ffbc33;
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.6);
+            --accent-glow: rgba(255, 99, 99, 0.2);
+            --font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Light mode variants */
         [data-theme="light"] {
             --bg-dark: #f0f0f0;
             --bg-panel: #ffffff;
@@ -34,6 +166,7 @@
             --border: #ccc;
             --text-primary: #1a1a1a;
             --text-secondary: #666;
+            --accent: #ff6b35;
         }
 
         * {
@@ -43,14 +176,34 @@
         }
 
         body {
-            font-family: 'Space Mono', monospace;
+            font-family: var(--font-family);
             background: var(--bg-dark);
             color: var(--text-primary);
             min-height: 100vh;
             background-image:
-                radial-gradient(circle at 20% 80%, rgba(255, 107, 53, 0.03) 0%, transparent 50%),
-                radial-gradient(circle at 80% 20%, rgba(0, 208, 132, 0.03) 0%, transparent 50%),
-                repeating-linear-gradient(90deg, transparent, transparent 50px, rgba(255, 255, 255, 0.01) 50px, rgba(255, 255, 255, 0.01) 51px);
+                radial-gradient(circle at 20% 80%, var(--accent-glow) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, var(--accent-glow) 0%, transparent 50%);
+            transition: all 0.3s ease;
+        }
+
+        /* Sci-Fi scanline overlay for scifi theme */
+        [data-theme="scifi"] body::before,
+        [data-theme="matrix"] body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.15) 0px,
+                rgba(0, 0, 0, 0.15) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+            pointer-events: none;
+            z-index: -1;
         }
 
         [data-theme="light"] body {
@@ -1553,6 +1706,39 @@
             border-color: var(--accent);
             box-shadow: 0 0 0 2px rgba(255, 107, 53, 0.2);
         }
+
+        /* Theme Selector */
+        .theme-selector {
+            min-width: 140px;
+        }
+
+        .theme-select {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 0.5rem;
+            border-radius: 6px;
+            font-family: var(--font-family);
+            font-size: 0.85rem;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.2s;
+        }
+
+        .theme-select:hover {
+            border-color: var(--accent);
+        }
+
+        .theme-select:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px var(--accent-glow);
+        }
+
+        /* Theme transition */
+        * {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
     </style>
 </head>
 
@@ -1680,6 +1866,25 @@
                     <div id="usernameDisplay" style="font-size: 0.8rem; color: var(--text-secondary);"></div>
                     <button class="logout-btn" onclick="logout()">Logout</button>
                 </div>
+                <!-- Theme Selector -->
+                <div class="theme-selector">
+                    <select id="themeSelect" class="theme-select" onchange="changeTheme(this.value)">
+                        <optgroup label="🎨 Dark Themes">
+                            <option value="default">🟠 Default (Orange)</option>
+                            <option value="scifi">🔵 Sci-Fi Cyan</option>
+                            <option value="spotify">🟢 Spotify Dark</option>
+                            <option value="linear">🟣 Linear Modern</option>
+                            <option value="raycast">🔴 Raycast Tool</option>
+                            <option value="matrix">💚 Matrix Green</option>
+                        </optgroup>
+                        <optgroup label="☀️ Light Themes">
+                            <option value="ollama">⚪ Ollama Minimal</option>
+                            <option value="vercel">⬛ Vercel Clean</option>
+                            <option value="notion">📘 Notion Light</option>
+                        </optgroup>
+                    </select>
+                    <div class="stat-label">Theme</div>
+                </div>
                 <div class="stats">
                     <div class="stat">
                         <div class="stat-value" id="statTotalSpools">0</div>
@@ -1724,12 +1929,6 @@
 
         <!-- Sidebar Navigation -->
         <nav class="sidebar-nav">
-            <button class="sidebar-btn" onclick="toggleTheme()" id="themeToggle">
-                <svg id="themeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-                </svg>
-                <span>Theme</span>
-            </button>
             <button class="sidebar-btn" onclick="exportCSV()">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -3403,26 +3602,6 @@
             document.documentElement.setAttribute('data-theme', saved);
         })();
 
-        function toggleTheme() {
-            const current = document.documentElement.getAttribute('data-theme') || 'dark';
-            const next = current === 'dark' ? 'light' : 'dark';
-            document.documentElement.setAttribute('data-theme', next);
-            localStorage.setItem('filament-theme', next);
-            updateThemeIcon(next);
-        }
-
-        function updateThemeIcon(theme) {
-            const icon = document.getElementById('themeIcon');
-            if (theme === 'light') {
-                icon.innerHTML = '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
-            } else {
-                icon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
-            }
-        }
-
-        // Init theme icon on load
-        updateThemeIcon(localStorage.getItem('filament-theme') || 'dark');
-
         // ====== EXPORT CSV ======
         function exportCSV() {
             if (filaments.length === 0) {
@@ -4416,6 +4595,72 @@
             } catch (err) {
                 showToast(err.message, 'error');
             }
+        }
+
+        // ====================
+        // THEME MANAGEMENT
+        // ====================
+
+        const THEMES = {
+            default: 'Default (Orange)',
+            scifi: 'Sci-Fi Cyan',
+            spotify: 'Spotify Dark',
+            linear: 'Linear Modern',
+            raycast: 'Raycast Tool',
+            matrix: 'Matrix Green',
+            ollama: 'Ollama Minimal',
+            vercel: 'Vercel Clean',
+            notion: 'Notion Light'
+        };
+
+        function changeTheme(themeName) {
+            // Validate theme
+            if (!THEMES[themeName]) {
+                console.error('Invalid theme:', themeName);
+                return;
+            }
+
+            // Apply theme
+            document.documentElement.setAttribute('data-theme', themeName);
+
+            // Save to localStorage
+            localStorage.setItem('spool-theme', themeName);
+
+            // Update theme-color meta tag
+            const metaTheme = document.querySelector('meta[name="theme-color"]');
+            const themeColors = {
+                default: '#ff6b35',
+                scifi: '#00f0ff',
+                spotify: '#1ed760',
+                linear: '#5e6ad2',
+                raycast: '#ff6363',
+                matrix: '#00ff00',
+                ollama: '#ffffff',
+                vercel: '#ffffff',
+                notion: '#0075de'
+            };
+            if (metaTheme && themeColors[themeName]) {
+                metaTheme.setAttribute('content', themeColors[themeName]);
+            }
+
+            console.log('Theme changed to:', THEMES[themeName]);
+        }
+
+        function loadSavedTheme() {
+            const savedTheme = localStorage.getItem('spool-theme') || 'default';
+            const themeSelect = document.getElementById('themeSelect');
+            if (themeSelect) {
+                themeSelect.value = savedTheme;
+            }
+            changeTheme(savedTheme);
+        }
+
+        // Load saved theme on page load
+        document.addEventListener('DOMContentLoaded', loadSavedTheme);
+
+        // Also load immediately in case DOMContentLoaded already fired
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            loadSavedTheme();
         }
 
     </script>

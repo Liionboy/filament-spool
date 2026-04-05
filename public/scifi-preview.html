@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Filament Spool - Sci-Fi Design Preview</title>
+    <style>
+        /* Sci-Fi / Cyberpunk Modern Design System */
+        
+        :root {
+            /* Colors - Sci-Fi Dark */
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #111118;
+            --bg-card: #0d0d14;
+            --bg-hover: #16161f;
+            
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --text-tertiary: rgba(255, 255, 255, 0.5);
+            --text-muted: rgba(255, 255, 255, 0.3);
+            
+            /* Neon Accents */
+            --accent-cyan: #00f0ff;
+            --accent-magenta: #ff00ff;
+            --accent-green: #00ff9d;
+            --accent-blue: #3b82f6;
+            
+            /* Glow Effects */
+            --glow-cyan: 0 0 20px rgba(0, 240, 255, 0.3);
+            --glow-magenta: 0 0 20px rgba(255, 0, 255, 0.3);
+            --glow-green: 0 0 20px rgba(0, 255, 157, 0.3);
+            
+            /* Borders */
+            --border-default: rgba(255, 255, 255, 0.1);
+            --border-strong: rgba(255, 255, 255, 0.2);
+            --border-accent: rgba(0, 240, 255, 0.3);
+            
+            /* Spacing */
+            --spacing-xs: 4px;
+            --spacing-sm: 8px;
+            --spacing-md: 16px;
+            --spacing-lg: 24px;
+            --spacing-xl: 32px;
+            
+            /* Border Radius - Sharp edges */
+            --radius-sm: 2px;
+            --radius-md: 4px;
+            --radius-pill: 9999px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', 'Fira Code', 'SFMono-Regular', Consolas, monospace;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            font-size: 14px;
+            letter-spacing: 0.02em;
+        }
+
+        /* Scanline effect background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.15) 0px,
+                rgba(0, 0, 0, 0.15) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* Header - Futuristic */
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 2px solid var(--border-accent);
+            padding: var(--spacing-md) var(--spacing-xl);
+            box-shadow: var(--glow-cyan);
+            position: relative;
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+        }
+
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: 400;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            color: var(--text-primary);
+            text-shadow: var(--glow-cyan);
+        }
+
+        .logo-text span {
+            color: var(--accent-cyan);
+        }
+
+        /* Stats - Neon */
+        .stats {
+            display: flex;
+            gap: var(--spacing-xl);
+        }
+
+        .stat {
+            text-align: center;
+            padding: var(--spacing-sm) var(--spacing-md);
+            background: rgba(0, 240, 255, 0.02);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-sm);
+        }
+
+        .stat-value {
+            font-size: 1.75rem;
+            font-weight: 400;
+            color: var(--accent-cyan);
+            text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+            letter-spacing: 2px;
+        }
+
+        .stat-label {
+            font-size: 0.65rem;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-top: 4px;
+        }
+
+        /* Buttons - Neon glow */
+        .btn {
+            background: transparent;
+            border: 1px solid var(--accent-cyan);
+            color: var(--accent-cyan);
+            padding: var(--spacing-sm) var(--spacing-lg);
+            border-radius: var(--radius-sm);
+            font-size: 0.8rem;
+            font-weight: 400;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: inherit;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn:hover {
+            background: rgba(0, 240, 255, 0.1);
+            box-shadow: var(--glow-cyan);
+            text-shadow: var(--glow-cyan);
+        }
+
+        .btn-primary {
+            background: var(--accent-cyan);
+            color: var(--bg-primary);
+            border: 1px solid var(--accent-cyan);
+        }
+
+        .btn-primary:hover {
+            background: var(--text-primary);
+            box-shadow: 0 0 30px rgba(0, 240, 255, 0.6);
+        }
+
+        /* Main Content */
+        .main {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: var(--spacing-xl);
+        }
+
+        /* Filters - Terminal tabs */
+        .filters {
+            display: flex;
+            gap: 2px;
+            margin-bottom: var(--spacing-lg);
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-sm);
+            padding: 4px;
+        }
+
+        .filter-chip {
+            padding: var(--spacing-sm) var(--spacing-lg);
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-radius: var(--radius-sm);
+        }
+
+        .filter-chip:hover {
+            color: var(--text-primary);
+            background: var(--bg-hover);
+        }
+
+        .filter-chip.active {
+            background: rgba(0, 240, 255, 0.1);
+            color: var(--accent-cyan);
+            box-shadow: inset 0 0 10px rgba(0, 240, 255, 0.1);
+        }
+
+        /* Spool Grid */
+        .spool-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: var(--spacing-md);
+        }
+
+        /* Spool Card - Sci-Fi */
+        .spool-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-sm);
+            padding: var(--spacing-lg);
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .spool-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+            transition: left 0.6s;
+        }
+
+        .spool-card:hover {
+            border-color: var(--border-accent);
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.15);
+        }
+
+        .spool-card:hover::before {
+            left: 100%;
+        }
+
+        .spool-header {
+            margin-bottom: var(--spacing-md);
+        }
+
+        .spool-material {
+            font-size: 1.25rem;
+            font-weight: 400;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: var(--accent-cyan);
+            text-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .spool-brand {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            letter-spacing: 1px;
+        }
+
+        /* Weight Bar - Neon progress */
+        .weight-bar-container {
+            margin: var(--spacing-md) 0;
+        }
+
+        .weight-bar {
+            height: 8px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .weight-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-green), var(--accent-cyan));
+            border-radius: var(--radius-sm);
+            transition: width 0.3s;
+            box-shadow: 0 0 10px rgba(0, 255, 157, 0.5);
+            position: relative;
+        }
+
+        .weight-bar-fill.low {
+            background: linear-gradient(90deg, #ff0040, var(--accent-magenta));
+            box-shadow: 0 0 10px rgba(255, 0, 64, 0.5);
+        }
+
+        .weight-bar-fill.medium {
+            background: linear-gradient(90deg, #ffaa00, #ffdd00);
+            box-shadow: 0 0 10px rgba(255, 170, 0, 0.4);
+        }
+
+        .weight-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 50%;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .weight-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.7rem;
+            color: var(--text-tertiary);
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Card Actions */
+        .spool-actions {
+            display: flex;
+            gap: var(--spacing-xs);
+            margin-top: var(--spacing-md);
+            padding-top: var(--spacing-md);
+            border-top: 1px solid var(--border-default);
+        }
+
+        .btn-icon {
+            background: transparent;
+            border: 1px solid var(--border-default);
+            color: var(--text-secondary);
+            padding: 6px 12px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-icon:hover {
+            background: rgba(0, 240, 255, 0.1);
+            color: var(--accent-cyan);
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+        }
+
+        /* Info box - Terminal prompt style */
+        .info-box {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-accent);
+            border-left: 3px solid var(--accent-cyan);
+            border-radius: var(--radius-sm);
+            padding: var(--spacing-lg);
+            margin-top: var(--spacing-xl);
+            position: relative;
+        }
+
+        .info-box::before {
+            content: '> SYSTEM.DESIGN';
+            position: absolute;
+            top: -10px;
+            left: var(--spacing-md);
+            background: var(--bg-primary);
+            padding: 2px 8px;
+            font-size: 0.65rem;
+            color: var(--accent-cyan);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .info-box h4 {
+            font-size: 1rem;
+            margin-bottom: var(--spacing-md);
+            color: var(--accent-cyan);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+        }
+
+        .info-box ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .info-box li {
+            padding: var(--spacing-xs) 0;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            padding-left: var(--spacing-xl);
+            position: relative;
+            line-height: 1.8;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .info-box li::before {
+            content: '→';
+            position: absolute;
+            left: 0;
+            color: var(--accent-cyan);
+            text-shadow: 0 0 5px rgba(0, 240, 255, 0.5);
+        }
+
+        /* Blinking cursor */
+        .blink {
+            animation: blink 1s step-end infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-text">SPOOL<span>_SYS</span></div>
+            </div>
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-value">24</div>
+                    <div class="stat-label">Active Units</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">12.5KG</div>
+                    <div class="stat-label">Total Mass</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">€245</div>
+                    <div class="stat-label">Inventory Value</div>
+                </div>
+            </div>
+            <button class="btn btn-primary">+ ADD_SPOOL</button>
+        </div>
+    </header>
+
+    <main class="main">
+        <div class="filters">
+            <button class="filter-chip active">ALL</button>
+            <button class="filter-chip">PLA</button>
+            <button class="filter-chip">PETG</button>
+            <button class="filter-chip">ABS</button>
+            <button class="filter-chip">TPU</button>
+            <button class="filter-chip">MISC</button>
+        </div>
+
+        <div class="spool-grid">
+            <!-- Card 1 -->
+            <div class="spool-card">
+                <div class="spool-header">
+                    <div class="spool-material">PLA</div>
+                    <div class="spool-brand">eSun :: White</div>
+                </div>
+                <div class="weight-bar-container">
+                    <div class="weight-bar">
+                        <div class="weight-bar-fill" style="width: 75%"></div>
+                    </div>
+                    <div class="weight-info">
+                        <span>750g / 1000g</span>
+                        <span>75%</span>
+                    </div>
+                </div>
+                <div class="spool-actions">
+                    <button class="btn-icon">EDIT</button>
+                    <button class="btn-icon">DELETE</button>
+                </div>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="spool-card">
+                <div class="spool-header">
+                    <div class="spool-material">PETG</div>
+                    <div class="spool-brand">Sunlu :: Black</div>
+                </div>
+                <div class="weight-bar-container">
+                    <div class="weight-bar">
+                        <div class="weight-bar-fill medium" style="width: 45%"></div>
+                    </div>
+                    <div class="weight-info">
+                        <span>450g / 1000g</span>
+                        <span>45%</span>
+                    </div>
+                </div>
+                <div class="spool-actions">
+                    <button class="btn-icon">EDIT</button>
+                    <button class="btn-icon">DELETE</button>
+                </div>
+            </div>
+
+            <!-- Card 3 -->
+            <div class="spool-card">
+                <div class="spool-header">
+                    <div class="spool-material">ABS</div>
+                    <div class="spool-brand">Prusament :: Orange</div>
+                </div>
+                <div class="weight-bar-container">
+                    <div class="weight-bar">
+                        <div class="weight-bar-fill low" style="width: 15%"></div>
+                    </div>
+                    <div class="weight-info">
+                        <span>150g / 1000g</span>
+                        <span>15%</span>
+                    </div>
+                </div>
+                <div class="spool-actions">
+                    <button class="btn-icon">EDIT</button>
+                    <button class="btn-icon">DELETE</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-box">
+            <h4>Sci-Fi / Cyberpunk Design System<span class="blink">_</span></h4>
+            <ul>
+                <li>Dark canvas (#0a0a0f) with subtle scanline overlay</li>
+                <li>Neon cyan (#00f0ff) accent with glow effects</li>
+                <li>Monospace fonts (JetBrains Mono) throughout</li>
+                <li>Sharp edges (2-4px radius) - brutalist aesthetic</li>
+                <li>Gradient progress bars with neon glow shadows</li>
+                <li>Sweeping light animation on card hover</li>
+                <li>Uppercase text with wide letter-spacing</li>
+                <li>Blinking cursor effect for terminal feel</li>
+            </ul>
+        </div>
+    </main>
+</body>
+</html>

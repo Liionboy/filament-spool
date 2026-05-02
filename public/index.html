@@ -1759,8 +1759,24 @@
                     </div>
                     <button type="submit" class="btn">Login</button>
                 </form>
+                <div class="auth-toggle" style="margin-top: 0.75rem;">
+                    <span onclick="showForgotPassword()">Forgot password?</span>
+                </div>
                 <div class="auth-toggle">
                     Don't have an account? <span onclick="toggleAuthView('register')">Register</span>
+                </div>
+            </div>
+            <div id="forgotPasswordView" style="display: none;">
+                <form id="forgotPasswordForm">
+                    <div id="forgotPasswordInfo" style="display: none; background: rgba(0, 255, 136, 0.1); border: 2px solid #00ff88; color: #00ff88; padding: 0.75rem; border-radius: 4px; margin-bottom: 1rem; font-size: 0.85rem; text-align: center;"></div>
+                    <div class="form-group">
+                        <label>Email or Username</label>
+                        <input type="text" id="forgotEmailOrUsername" required>
+                    </div>
+                    <button type="submit" class="btn">Send Reset Link</button>
+                </form>
+                <div class="auth-toggle">
+                    Back to <span onclick="toggleAuthView('login')">Login</span>
                 </div>
             </div>
             <div id="registerView" style="display: none;">
@@ -2583,6 +2599,7 @@
         const authContainer = document.getElementById('authContainer');
         const loginForm = document.getElementById('loginForm');
         const registerForm = document.getElementById('registerForm');
+        const forgotPasswordForm = document.getElementById('forgotPasswordForm');
         const app = document.getElementById('app');
         const usernameDisplay = document.getElementById('usernameDisplay');
 
@@ -2601,7 +2618,32 @@
         const costValue = document.getElementById('costValue');
 
         // Initialize
-        if (token) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const resetTokenFromUrl = urlParams.get('resetToken');
+
+        if (resetTokenFromUrl) {
+            localStorage.removeItem('filament_token');
+            localStorage.removeItem('filament_user');
+            token = null;
+            user = null;
+            showAuth();
+            toggleAuthView('login');
+
+            setTimeout(async () => {
+                const newPassword = prompt('Enter your new password (min 6 chars):');
+                if (!newPassword) return;
+                try {
+                    await apiFetch('/auth/reset-password', {
+                        method: 'POST',
+                        body: JSON.stringify({ token: resetTokenFromUrl, newPassword })
+                    });
+                    showToast('Password reset successful. Please login.', 'success');
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                } catch (err) {
+                    showToast(err.message || 'Invalid or expired reset link', 'error');
+                }
+            }, 200);
+        } else if (token) {
             showApp();
         } else {
             showAuth();
@@ -2625,6 +2667,13 @@
         function toggleAuthView(view) {
             document.getElementById('loginView').style.display = view === 'login' ? 'block' : 'none';
             document.getElementById('registerView').style.display = view === 'register' ? 'block' : 'none';
+            document.getElementById('forgotPasswordView').style.display = view === 'forgot' ? 'block' : 'none';
+        }
+
+        function showForgotPassword() {
+            toggleAuthView('forgot');
+            const infoDiv = document.getElementById('forgotPasswordInfo');
+            if (infoDiv) infoDiv.style.display = 'none';
         }
 
         async function logout() {
@@ -2715,6 +2764,27 @@
                 localStorage.setItem('filament_user', JSON.stringify(user));
                 showApp();
                 showToast('Account created successfully!', 'success');
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        });
+
+        forgotPasswordForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const infoDiv = document.getElementById('forgotPasswordInfo');
+            if (infoDiv) infoDiv.style.display = 'none';
+
+            try {
+                const emailOrUsername = document.getElementById('forgotEmailOrUsername').value;
+                const data = await apiFetch('/auth/forgot-password', {
+                    method: 'POST',
+                    body: JSON.stringify({ emailOrUsername })
+                });
+
+                if (infoDiv) {
+                    infoDiv.textContent = data.message || 'If the account exists, a reset email was sent.';
+                    infoDiv.style.display = 'block';
+                }
             } catch (err) {
                 showToast(err.message, 'error');
             }

@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const path = require('path');
 require('dotenv').config();
-const { sendLowFilamentAlert } = require('./email-service');
+const { sendLowFilamentAlert, sendPasswordResetEmail } = require('./email-service');
 const QRCode = require('qrcode');
 const PDFDocument = require('pdfkit');
 const swaggerUi = require('swagger-ui-express');
@@ -206,6 +206,92 @@ app.post('/api/auth/login', (req, res) => {
             });
         }
     );
+});
+
+app.post('/api/auth/forgot-password', async (req, res) => {
+    const { emailOrUsername } = req.body;
+
+    if (!emailOrUsername) {
+        return res.status(400).json({ error: 'Email or username is required' });
+    }
+
+    db.get(
+        'SELECT id, username, email, password FROM users WHERE username = ? OR email = ?',
+        [emailOrUsername, emailOrUsername],
+        async (err, user) => {
+            if (err) {
+                return res.status(500).json({ error: 'Server error' });
+            }
+
+            // Always return generic success to avoid account enumeration
+            const genericMessage = { message: 'If the account exists, a reset email was sent.' };
+            if (!user) {
+                return res.json(genericMessage);
+            }
+
+            try {
+                const resetSecret = `${JWT_SECRET}:${user.password}`;
+                const resetToken = jwt.sign(
+                    { userId: user.id, purpose: 'password-reset' },
+                    resetSecret,
+                    { expiresIn: '15m' }
+                );
+
+                const appUrl = process.env.APP_URL || `http://localhost:${PORT}`;
+                const resetLink = `${appUrl}/?resetToken=${encodeURIComponent(resetToken)}`;
+                await sendPasswordResetEmail(user.email, resetLink);
+            } catch (e) {
+                console.error('Forgot password email error:', e);
+            }
+
+            res.json(genericMessage);
+        }
+    );
+});
+
+app.post('/api/auth/reset-password', async (req, res) => {
+    const { token, newPassword } = req.body;
+
+    if (!token || !newPassword) {
+        return res.status(400).json({ error: 'Token and new password are required' });
+    }
+
+    if (newPassword.length < 6) {
+        return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    }
+
+    try {
+        const decodedUnsafe = jwt.decode(token);
+        if (!decodedUnsafe?.userId) {
+            return res.status(400).json({ error: 'Invalid reset token' });
+        }
+
+        db.get('SELECT id, password FROM users WHERE id = ?', [decodedUnsafe.userId], async (err, user) => {
+            if (err || !user) {
+                return res.status(400).json({ error: 'Invalid or expired reset token' });
+            }
+
+            try {
+                const resetSecret = `${JWT_SECRET}:${user.password}`;
+                const payload = jwt.verify(token, resetSecret);
+                if (payload.purpose !== 'password-reset') {
+                    return res.status(400).json({ error: 'Invalid reset token' });
+                }
+
+                const hashedPassword = await bcrypt.hash(newPassword, 10);
+                db.run('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, user.id], function (updateErr) {
+                    if (updateErr) {
+                        return res.status(500).json({ error: 'Failed to reset password' });
+                    }
+                    res.json({ message: 'Password reset successful' });
+                });
+            } catch (_verifyErr) {
+                return res.status(400).json({ error: 'Invalid or expired reset token' });
+            }
+        });
+    } catch (_err) {
+        return res.status(400).json({ error: 'Invalid reset token' });
+    }
 });
 
 /**

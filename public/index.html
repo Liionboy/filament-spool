@@ -1779,6 +1779,23 @@
                     Back to <span onclick="toggleAuthView('login')">Login</span>
                 </div>
             </div>
+            <div id="resetPasswordView" style="display: none;">
+                <form id="resetPasswordForm">
+                    <div id="resetPasswordInfo" style="display: none; background: rgba(0, 255, 136, 0.1); border: 2px solid #00ff88; color: #00ff88; padding: 0.75rem; border-radius: 4px; margin-bottom: 1rem; font-size: 0.85rem; text-align: center;"></div>
+                    <div class="form-group">
+                        <label>New Password</label>
+                        <input type="password" id="resetNewPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Confirm New Password</label>
+                        <input type="password" id="resetConfirmPassword" required>
+                    </div>
+                    <button type="submit" class="btn">Reset Password</button>
+                </form>
+                <div class="auth-toggle">
+                    Back to <span onclick="toggleAuthView('login')">Login</span>
+                </div>
+            </div>
             <div id="registerView" style="display: none;">
                 <form id="registerForm">
                     <div class="form-group">
@@ -2600,6 +2617,7 @@
         const loginForm = document.getElementById('loginForm');
         const registerForm = document.getElementById('registerForm');
         const forgotPasswordForm = document.getElementById('forgotPasswordForm');
+        const resetPasswordForm = document.getElementById('resetPasswordForm');
         const app = document.getElementById('app');
         const usernameDisplay = document.getElementById('usernameDisplay');
 
@@ -2627,22 +2645,7 @@
             token = null;
             user = null;
             showAuth();
-            toggleAuthView('login');
-
-            setTimeout(async () => {
-                const newPassword = prompt('Enter your new password (min 6 chars):');
-                if (!newPassword) return;
-                try {
-                    await apiFetch('/auth/reset-password', {
-                        method: 'POST',
-                        body: JSON.stringify({ token: resetTokenFromUrl, newPassword })
-                    });
-                    showToast('Password reset successful. Please login.', 'success');
-                    window.history.replaceState({}, document.title, window.location.pathname);
-                } catch (err) {
-                    showToast(err.message || 'Invalid or expired reset link', 'error');
-                }
-            }, 200);
+            toggleAuthView('reset');
         } else if (token) {
             showApp();
         } else {
@@ -2668,6 +2671,7 @@
             document.getElementById('loginView').style.display = view === 'login' ? 'block' : 'none';
             document.getElementById('registerView').style.display = view === 'register' ? 'block' : 'none';
             document.getElementById('forgotPasswordView').style.display = view === 'forgot' ? 'block' : 'none';
+            document.getElementById('resetPasswordView').style.display = view === 'reset' ? 'block' : 'none';
         }
 
         function showForgotPassword() {
@@ -2787,6 +2791,42 @@
                 }
             } catch (err) {
                 showToast(err.message, 'error');
+            }
+        });
+
+        resetPasswordForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const newPassword = (document.getElementById('resetNewPassword').value || '').trim();
+            const confirmPassword = (document.getElementById('resetConfirmPassword').value || '').trim();
+
+            if (newPassword.length < 6) {
+                showToast('Password must be at least 6 characters', 'error');
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                showToast('Passwords do not match', 'error');
+                return;
+            }
+
+            try {
+                await apiFetch('/auth/reset-password', {
+                    method: 'POST',
+                    body: JSON.stringify({ token: resetTokenFromUrl, newPassword })
+                });
+
+                const infoDiv = document.getElementById('resetPasswordInfo');
+                if (infoDiv) {
+                    infoDiv.textContent = 'Password reset successful. You can now login.';
+                    infoDiv.style.display = 'block';
+                }
+
+                showToast('Password reset successful. Please login.', 'success');
+                window.history.replaceState({}, document.title, window.location.pathname);
+                setTimeout(() => toggleAuthView('login'), 1200);
+            } catch (err) {
+                showToast(err.message || 'Invalid or expired reset link', 'error');
             }
         });
 

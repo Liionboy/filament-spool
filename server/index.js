@@ -237,7 +237,11 @@ app.post('/api/auth/forgot-password', async (req, res) => {
                     { expiresIn: '15m' }
                 );
 
-                const appUrl = process.env.APP_URL || `http://localhost:${PORT}`;
+                const forwardedProto = req.headers['x-forwarded-proto'];
+                const proto = (forwardedProto || req.protocol || 'http').split(',')[0].trim();
+                const host = req.headers['x-forwarded-host'] || req.get('host');
+                const runtimeBaseUrl = host ? `${proto}://${host}` : `http://localhost:${PORT}`;
+                const appUrl = process.env.APP_URL || runtimeBaseUrl;
                 const resetLink = `${appUrl}/?resetToken=${encodeURIComponent(resetToken)}`;
                 await sendPasswordResetEmail(user.email, resetLink);
             } catch (e) {
@@ -251,12 +255,13 @@ app.post('/api/auth/forgot-password', async (req, res) => {
 
 app.post('/api/auth/reset-password', async (req, res) => {
     const { token, newPassword } = req.body;
+    const normalizedPassword = (newPassword || '').trim();
 
-    if (!token || !newPassword) {
+    if (!token || !normalizedPassword) {
         return res.status(400).json({ error: 'Token and new password are required' });
     }
 
-    if (newPassword.length < 6) {
+    if (normalizedPassword.length < 6) {
         return res.status(400).json({ error: 'Password must be at least 6 characters' });
     }
 
@@ -278,7 +283,7 @@ app.post('/api/auth/reset-password', async (req, res) => {
                     return res.status(400).json({ error: 'Invalid reset token' });
                 }
 
-                const hashedPassword = await bcrypt.hash(newPassword, 10);
+                const hashedPassword = await bcrypt.hash(normalizedPassword, 10);
                 db.run('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, user.id], function (updateErr) {
                     if (updateErr) {
                         return res.status(500).json({ error: 'Failed to reset password' });

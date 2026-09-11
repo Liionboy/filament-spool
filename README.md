@@ -107,7 +107,8 @@ Edit `.env` with your settings:
 
 | Variable | Description | Example |
 | :--- | :--- | :--- |
-| `JWT_SECRET` | Secret key for sessions | `your_random_secret_string` |
+| `JWT_SECRET` | Secret key for sessions (at least 32 characters in production) | `generate-a-long-random-secret` |
+| `CORS_ORIGIN` | Optional comma-separated browser origins allowed to call the API | `https://spool.example.com` |
 | `SMTP_HOST` | Email server for alerts | `smtp.gmail.com` |
 | `SMTP_PORT` | SMTP port | `465` (SSL) or `587` (STARTTLS) |
 | `SMTP_USER` | Email address | `alerts@example.com` |

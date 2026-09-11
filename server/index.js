@@ -3,6 +3,7 @@ const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
+const crypto = require('crypto');
 const path = require('path');
 require('dotenv').config();
 const { sendLowFilamentAlert, sendPasswordResetEmail } = require('./email-service');
@@ -13,7 +14,30 @@ const swaggerJsdoc = require('swagger-jsdoc');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this-in-production';
+const configuredJwtSecret = process.env.JWT_SECRET?.trim();
+if (process.env.NODE_ENV === 'production' && !configuredJwtSecret) {
+    throw new Error('JWT_SECRET must be configured before starting in production.');
+}
+if (process.env.NODE_ENV === 'production' && configuredJwtSecret.length < 32) {
+    throw new Error('JWT_SECRET must be at least 32 characters in production.');
+}
+// A random development-only secret prevents the shipped fallback from being used.
+// It intentionally invalidates development sessions after a restart.
+const JWT_SECRET = configuredJwtSecret || crypto.randomBytes(32).toString('hex');
+
+const allowedCorsOrigins = new Set(
+    (process.env.CORS_ORIGIN || '')
+        .split(',')
+        .map((origin) => origin.trim())
+        .filter(Boolean)
+);
+const corsOptions = allowedCorsOrigins.size > 0
+    ? {
+        origin(origin, callback) {
+            callback(null, !origin || allowedCorsOrigins.has(origin));
+        },
+    }
+    : { origin: false };
 
 // Swagger Configuration
 const swaggerOptions = {
@@ -96,7 +120,7 @@ const swaggerOptions = {
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
 
 // Middleware
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
 
